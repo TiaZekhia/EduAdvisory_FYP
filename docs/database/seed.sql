@@ -608,4 +608,16 @@ JOIN course_grading_schema g
   ON g.course_code = e.course_code;
 
 
+-- =========================
+-- USERS
+-- =========================
+INSERT INTO users (
+    username, password, role, linked_student_id, linked_advisor_id
+) VALUES
+('tia.student', 'hashed_password_1', 'STUDENT', 1, NULL),
+('georges.student', 'hashed_password_2', 'STUDENT', 2, NULL),
+('ahmad.advisor', 'hashed_password_3', 'ADVISOR', NULL, 1),
+('admin', 'hashed_password_4', 'ADMIN', NULL, NULL);
+
+
 
