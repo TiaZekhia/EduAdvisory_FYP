@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using EduAdvisory_Backend.Models;
+using EduAdvisory_Backend.Interfaces.Services;
+using EduAdvisory_Backend.Services;
+using EduAdvisory_Backend.Interfaces.Repositories;
+using EduAdvisory_Backend.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<EduAdvisoryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
+
+builder.Services.AddScoped<IStudentAnalysisService, StudentAnalysisService>();
+builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+builder.Services.AddScoped<IStudyGuideRepository, StudyGuideRepository>();
+builder.Services.AddScoped<ICoursePrerequisiteRepository, CoursePrerequisiteRepository>();
+
 
 
 builder.Services.AddControllers();

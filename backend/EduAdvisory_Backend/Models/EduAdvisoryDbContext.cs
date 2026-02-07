@@ -45,12 +45,29 @@ public partial class EduAdvisoryDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public DbSet<CoursePrerequisite> CoursePrerequisites { get; set; }
+
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseNpgsql("Host=localhost;Database=eduadvisory_db;Username=postgres;Password=@#$TIze06@#$");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<CoursePrerequisite>()
+        .HasKey(cp => new { cp.CourseCode, cp.PrerequisiteCourseCode });
+
+        modelBuilder.Entity<CoursePrerequisite>()
+            .HasOne(cp => cp.Course)
+            .WithMany(c => c.Prerequisites)
+            .HasForeignKey(cp => cp.CourseCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CoursePrerequisite>()
+            .HasOne(cp => cp.PrerequisiteCourse)
+            .WithMany(c => c.RequiredBy)
+            .HasForeignKey(cp => cp.PrerequisiteCourseCode)
+            .OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Advisor>(entity =>
         {
             entity.HasKey(e => e.AdvisorId).HasName("advisor_pkey");
@@ -105,47 +122,6 @@ public partial class EduAdvisoryDbContext : DbContext
         {
             entity.HasKey(e => e.CourseCode).HasName("sis_course_pkey");
 
-            entity.HasMany(d => d.CourseCodes).WithMany(p => p.PrerequisiteCourseCodes)
-                .UsingEntity<Dictionary<string, object>>(
-                    "CoursePrerequisite",
-                    r => r.HasOne<SisCourse>().WithMany()
-                        .HasForeignKey("CourseCode")
-                        .HasConstraintName("course_prerequisite_course_code_fkey"),
-                    l => l.HasOne<SisCourse>().WithMany()
-                        .HasForeignKey("PrerequisiteCourseCode")
-                        .HasConstraintName("course_prerequisite_prerequisite_course_code_fkey"),
-                    j =>
-                    {
-                        j.HasKey("CourseCode", "PrerequisiteCourseCode").HasName("course_prerequisite_pkey");
-                        j.ToTable("course_prerequisite");
-                        j.IndexerProperty<string>("CourseCode")
-                            .HasMaxLength(20)
-                            .HasColumnName("course_code");
-                        j.IndexerProperty<string>("PrerequisiteCourseCode")
-                            .HasMaxLength(20)
-                            .HasColumnName("prerequisite_course_code");
-                    });
-
-            entity.HasMany(d => d.PrerequisiteCourseCodes).WithMany(p => p.CourseCodes)
-                .UsingEntity<Dictionary<string, object>>(
-                    "CoursePrerequisite",
-                    r => r.HasOne<SisCourse>().WithMany()
-                        .HasForeignKey("PrerequisiteCourseCode")
-                        .HasConstraintName("course_prerequisite_prerequisite_course_code_fkey"),
-                    l => l.HasOne<SisCourse>().WithMany()
-                        .HasForeignKey("CourseCode")
-                        .HasConstraintName("course_prerequisite_course_code_fkey"),
-                    j =>
-                    {
-                        j.HasKey("CourseCode", "PrerequisiteCourseCode").HasName("course_prerequisite_pkey");
-                        j.ToTable("course_prerequisite");
-                        j.IndexerProperty<string>("CourseCode")
-                            .HasMaxLength(20)
-                            .HasColumnName("course_code");
-                        j.IndexerProperty<string>("PrerequisiteCourseCode")
-                            .HasMaxLength(20)
-                            .HasColumnName("prerequisite_course_code");
-                    });
         });
 
         modelBuilder.Entity<SisCourseAssessment>(entity =>

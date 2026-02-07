@@ -45,11 +45,7 @@ public partial class SisCourse
     [InverseProperty("CourseCodeNavigation")]
     public virtual ICollection<StudyGuide> StudyGuides { get; set; } = new List<StudyGuide>();
 
-    [ForeignKey("PrerequisiteCourseCode")]
-    [InverseProperty("PrerequisiteCourseCodes")]
-    public virtual ICollection<SisCourse> CourseCodes { get; set; } = new List<SisCourse>();
+    public ICollection<CoursePrerequisite> Prerequisites { get; set; }
+    public ICollection<CoursePrerequisite> RequiredBy { get; set; }
 
-    [ForeignKey("CourseCode")]
-    [InverseProperty("CourseCodes")]
-    public virtual ICollection<SisCourse> PrerequisiteCourseCodes { get; set; } = new List<SisCourse>();
 }
