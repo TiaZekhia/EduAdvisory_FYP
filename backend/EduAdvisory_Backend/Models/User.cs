@@ -18,8 +18,10 @@ public partial class User
     [StringLength(100)]
     public string? Username { get; set; }
 
-    [Column("password")]
-    public string? Password { get; set; }
+    [Column("keycloak_id")]
+    [StringLength(100)]
+    public string? KeycloakId { get; set; }
+
 
     [Column("role")]
     [StringLength(20)]

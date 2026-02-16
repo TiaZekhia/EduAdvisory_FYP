@@ -1,40 +1,31 @@
-using Microsoft.EntityFrameworkCore;
-using EduAdvisory_Backend.Models;
-using EduAdvisory_Backend.Interfaces.Services;
-using EduAdvisory_Backend.Services;
-using EduAdvisory_Backend.Interfaces.Repositories;
-using EduAdvisory_Backend.Repositories;
+using EduAdvisory_Backend.Extensions;
+using EduAdvisory_Backend.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddDbContext<EduAdvisoryDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
-
-builder.Services.AddScoped<IStudentAnalysisService, StudentAnalysisService>();
-builder.Services.AddScoped<IStudentRepository, StudentRepository>();
-builder.Services.AddScoped<IStudyGuideRepository, StudyGuideRepository>();
-builder.Services.AddScoped<ICoursePrerequisiteRepository, CoursePrerequisiteRepository>();
-
-
+// Configure services
+builder.Services.AddCorsConfiguration();
+builder.Services.AddKeycloakAuthentication(builder.Configuration);
+builder.Services.AddDatabaseConfiguration(builder.Configuration);
+builder.Services.AddApplicationServices();
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure middleware pipeline
+app.UseCors("AllowFrontend");
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseRequestLogging(); // Only log requests in development
 }
 
-app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
