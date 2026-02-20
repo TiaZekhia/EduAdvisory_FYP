@@ -19,8 +19,8 @@ public partial class Meeting
     [Column("student_id")]
     public int? StudentId { get; set; }
 
-    [Column("meeting_date", TypeName = "timestamp without time zone")]
-    public DateTime? MeetingDate { get; set; }
+    [Column("meeting_date", TypeName = "timestamp with time zone")]
+    public DateTimeOffset? MeetingDate { get; set; }
 
     [Column("meeting_type")]
     [StringLength(20)]
