@@ -38,15 +38,15 @@ export default function CourseCard({ course }) {
       <div className="row mt-3 g-3">
         <div className="col-6 col-md-3">
           <div className="text-muted small">Midterm</div>
-          <div className="fw-semibold">{mid ?? "-"}%</div>
+          <div className="fw-semibold">{mid ?? "-"}/100</div>
         </div>
         <div className="col-6 col-md-3">
           <div className="text-muted small">Project</div>
-          <div className="fw-semibold">{proj ?? "-"}%</div>
+          <div className="fw-semibold">{proj ?? "-"}/100</div>
         </div>
         <div className="col-6 col-md-3">
           <div className="text-muted small">Lab</div>
-          <div className="fw-semibold">{lab ?? "-"}%</div>
+          <div className="fw-semibold">{lab ?? "-"}/100</div>
         </div>
         <div className="col-6 col-md-3">
           <div className="text-muted small">Absences</div>

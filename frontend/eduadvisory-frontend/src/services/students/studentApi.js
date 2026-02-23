@@ -9,4 +9,10 @@ export const studentApi = {
   getMyStats: () => apiClient.get("/students/me/stats"),
   getMyDegreeProgress: () => apiClient.get("/students/me/degree-progress"),
   getMyUpcomingMeetingsCount: () => apiClient.get("/students/me/meetings/upcoming/count"),
+  getMyAlerts: (limit = 5) => apiClient.get(`/students/me/alerts?limit=${limit}`),
+  getMyAlertsCount: () => apiClient.get("/students/me/alerts/count"),
+  getMyProgressSummary: () => apiClient.get("/students/me/progress/summary"),
+  getMyProgressDepartments: () => apiClient.get("/students/me/progress/departments"),
+  getMyProgressHistory: () => apiClient.get("/students/me/progress/history"),
+  getMyStudyGuideComparison: () => apiClient.get("/students/me/progress/study-guide-comparison"),
 };

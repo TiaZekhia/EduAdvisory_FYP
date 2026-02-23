@@ -6,8 +6,11 @@ import { useStudentSummary } from "../context/StudentSummaryProvider";
 import { ProgressBar } from "primereact/progressbar";
 import { useStudentDashboardCourses } from "./hooks/useStudentDashboardCourses";
 import { useStudentDashboardStats } from "./hooks/useStudentDashboardStats";
+import AlertsBanner from "./components/AlertsBanner";
+import { useAlerts } from "../alerts/hooks/useAlerts";
 
 export default function DashboardPage() {
+  const { alerts, loading: alertsLoading } = useAlerts(3);
   const { summary, loading: summaryLoading } = useStudentSummary();
 
 const {
@@ -25,7 +28,7 @@ const {
   error: statsError,
 } = useStudentDashboardStats();
 
-if (summaryLoading || coursesLoading || statsLoading) {
+if (summaryLoading || coursesLoading || statsLoading || alertsLoading) {
   return <div className="p-4">Loading...</div>;
 }
 
@@ -44,6 +47,7 @@ if (statsError) return <div className="p-4 text-danger">{statsError}</div>;
 
       <h3 className="mt-3">Welcome back, {summary.fullName}!</h3>
 
+<AlertsBanner alerts={alerts} />
       {/* KPI cards */}
       <div className="row g-3 mt-2">
   <div className="col-12 col-md-6 col-lg-3">

@@ -121,5 +121,83 @@ namespace EduAdvisory_Backend.Controllers
             var count = _studentRepo.GetUpcomingMeetingsCount(student.StudentId);
             return Ok(new UpcomingMeetingsCountDto { UpcomingMeetingsCount = count });
         }
+
+        [HttpGet("me/alerts")]
+        public IActionResult GetMyAlerts([FromQuery] int limit = 5)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null)
+                return NotFound("Student not linked to this user.");
+
+            var alerts = _studentRepo.GetStudentAlerts(student.StudentId, limit);
+            return Ok(alerts);
+        }
+
+        [HttpGet("me/alerts/count")]
+        public IActionResult GetMyAlertsCount()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null)
+                return NotFound("Student not linked to this user.");
+
+            var count = _studentRepo.GetStudentAlertsCount(student.StudentId);
+            return Ok(count);
+        }
+
+        [HttpGet("me/progress/summary")]
+        public IActionResult GetMyProgressSummary()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null) return NotFound("Student not linked to this user.");
+
+            return Ok(_studentRepo.GetProgressSummary(student.StudentId));
+        }
+
+        [HttpGet("me/progress/departments")]
+        public IActionResult GetMyProgressDepartments()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null) return NotFound("Student not linked to this user.");
+
+            return Ok(_studentRepo.GetProgressDepartments(student.StudentId));
+        }
+
+        [HttpGet("me/progress/history")]
+        public IActionResult GetMyProgressHistory()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null) return NotFound("Student not linked to this user.");
+
+            return Ok(_studentRepo.GetProgressHistory(student.StudentId));
+        }
+
+        [HttpGet("me/progress/study-guide-comparison")]
+        public IActionResult GetMyStudyGuideComparison()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null) return NotFound("Student not linked to this user.");
+
+            return Ok(_studentRepo.GetStudyGuideComparison(student.StudentId));
+        }
     }
 }

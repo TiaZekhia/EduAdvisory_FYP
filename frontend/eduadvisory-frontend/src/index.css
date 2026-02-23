@@ -11,3 +11,44 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.student-shell {
+  height: 100vh;
+  display: flex;
+}
+
+/* desktop sidebar */
+.student-sidebar {
+  width: 260px;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  position: sticky;     /* stays while scrolling */
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;     /* sidebar can scroll internally if long */
+}
+
+/* main content scrolls */
+.student-main {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  background: #f8f9fa;
+}
+
+/* mobile topbar */
+.student-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+/* mobile sidebar */
+.student-mobile-sidebar {
+  width: 280px;
+}

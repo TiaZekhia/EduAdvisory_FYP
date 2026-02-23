@@ -4,7 +4,7 @@ import App from "./App";
 import keycloak from "./keycloak";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-import "primereact/resources/themes/lara-light-indigo/theme.css"; 
+import "primereact/resources/themes/lara-light-indigo/theme.css"; // or your theme
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
