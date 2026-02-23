@@ -1,0 +1,62 @@
+/* Remove Prime padding */
+.quick-card.p-card .p-card-body {
+  padding: 28px 20px;
+}
+
+.quick-card.p-card .p-card-content {
+  padding: 0;
+}
+
+/* Card style */
+.quick-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: none;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+/* Hover effect (subtle lift like modern UI) */
+.quick-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Icon */
+.quick-card-icon {
+  font-size: 28px;
+  margin-bottom: 14px;
+}
+
+/* Title */
+.quick-card-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+/* Subtitle */
+.quick-card-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Icon colors (like screenshot) */
+.icon-dark {
+  color: #111827;
+}
+
+.icon-green {
+  color: #16a34a;
+}
+
+.icon-orange {
+  color: #f97316;
+}
+.section-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+}

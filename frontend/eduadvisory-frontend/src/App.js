@@ -88,11 +88,14 @@ export default App;*/
 import { RouterProvider } from "react-router-dom";
 import { router } from "./app/routes";
 import { AuthProvider } from "./app/providers/AuthProvider";
+import { PrimeReactProvider } from "primereact/api";
 
 export default function App() {
   return (
+    <PrimeReactProvider>
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
+    </PrimeReactProvider>
   );
 }

@@ -1,59 +1,40 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Sidebar } from "primereact/sidebar";
-import { Button } from "primereact/button";
 import StudentSidebarContent from "../../shared/components/StudentSidebarContent";
+import StudentNavbar from "./StudentNavbar";
+import { useAuth } from "../providers/AuthProvider";
+import { useStudentSummary } from "../../features/student/context/StudentSummaryProvider";
 import "./studentLayout.css";
 
 export default function StudentLayout() {
-  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // default open (change if you want)
+  const { keycloak } = useAuth();
+  const { summary } = useStudentSummary();
+
+  const notificationsCount = 3;
+  const alertsCount = 6;
 
   return (
-    <div className="student-shell">
-      {/* ===== Desktop sidebar ===== */}
-      <aside className="student-sidebar d-none d-md-flex">
+    <div className={`student-shell ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
+      <aside className="student-sidebar">
         <StudentSidebarContent />
       </aside>
 
-      {/* ===== Main column (topbar + page content) ===== */}
       <div className="student-maincol">
-        {/* Mobile topbar */}
-        <div className="student-topbar d-md-none">
-          <Button
-            icon="pi pi-bars"
-            rounded
-            text
-            type="button"
-            onClick={() => setSidebarVisible(true)}
-          />
-          <div className="ms-2">
-            <div className="fw-bold">Student Portal</div>
-            <div className="text-muted small">University System</div>
-          </div>
+        <StudentNavbar
+          onToggleSidebar={() => setSidebarOpen((v) => !v)}
+          sidebarOpen={sidebarOpen}
+          notificationsCount={notificationsCount}
+          alertsCount={alertsCount}
+          userName={summary?.fullName ?? "Student"}
+          userId={summary?.studentId ?? ""}
+          onLogout={() => keycloak.logout()}
+        />
 
-          <div className="ms-auto">
-            <Button label="Help" outlined size="small" type="button" />
-          </div>
-        </div>
-
-        {/* Page content scrolls here (sidebar stays fixed) */}
         <main className="student-main">
           <Outlet />
         </main>
       </div>
-
-      {/* ===== Mobile PrimeReact Sidebar ===== */}
-      <Sidebar
-        visible={sidebarVisible}
-        position="left"
-        onHide={() => setSidebarVisible(false)}
-        showCloseIcon
-        dismissable
-        blockScroll
-        className="student-mobile-sidebar"
-      >
-        <StudentSidebarContent onNavigate={() => setSidebarVisible(false)} />
-      </Sidebar>
     </div>
   );
 }
