@@ -1,0 +1,12 @@
+.loading-page{
+  height: 100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+.loading-text{
+  color: #6b7280;
+  font-size: 14px;
+}

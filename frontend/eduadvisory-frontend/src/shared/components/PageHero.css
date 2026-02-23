@@ -1,0 +1,36 @@
+.page-hero {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.page-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.page-hero-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-hero-badge {
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.page-hero-subtitle {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #374151;
+}

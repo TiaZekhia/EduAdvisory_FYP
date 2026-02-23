@@ -9,7 +9,7 @@ import AlertsPage from "../features/student/alerts/AlertsPage";
 import MeetingsPage from "../features/student/meetings/MeetingsPage";
 import MessagesPage from "../features/student/messages/MessagesPage";
 import AIAssistantPage from "../features/student/ai/AIAssistantPage";
-
+import NotFoundPage from "../shared/pages/NotFoundPage";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -35,8 +35,5 @@ export const router = createBrowserRouter([
       { path: "ai-assistant", element: <AIAssistantPage /> },
     ],
   },
-  {
-    path: "*",
-    element: <div className="p-4">404 Not Found</div>,
-  },
+  { path: "*", element: <NotFoundPage /> },
 ]);

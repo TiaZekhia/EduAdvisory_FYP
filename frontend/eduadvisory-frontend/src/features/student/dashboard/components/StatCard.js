@@ -1,11 +1,23 @@
 import { Card } from "primereact/card";
 
-export default function StatCard({ title, value, subtitle }) {
+export default function StatCard({
+  title,
+  value,
+  subtitle,
+  icon,
+  valueClassName
+}) {
   return (
-    <Card className="h-100 shadow-sm">
-      <div className="text-muted small">{title}</div>
-      <div className="fs-2 fw-semibold mt-2">{value}</div>
-      <div className="text-muted small mt-1">{subtitle}</div>
+    <Card className="stat-card">
+      <div className="stat-card-top">
+        <div className="stat-card-title">
+          {icon && <i className={`${icon} stat-card-icon`} />}
+          <span>{title}</span>
+        </div>
+      </div>
+
+      <div className={`stat-card-value ${valueClassName ?? ""}`}>{value}</div>
+      <div className="stat-card-subtitle">{subtitle}</div>
     </Card>
   );
 }

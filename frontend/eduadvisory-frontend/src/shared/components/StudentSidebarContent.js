@@ -1,8 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Button } from "primereact/button";
 import { Badge } from "primereact/badge";
-import { useStudentSummary } from "../../features/student/context/StudentSummaryProvider";
-import { useAuth } from "../../app/providers/AuthProvider";
 // import { useAlertsCount } from "../../features/student/alerts/hooks/useAlertsCount";
 
 const navItems = [
@@ -16,15 +13,13 @@ const navItems = [
 ];
 
 export default function StudentSidebarContent({ onNavigate }) {
-  const { summary, loading } = useStudentSummary();
-  const { keycloak } = useAuth();
 
   // Replace with real hook:
   // const { alertsCount } = useAlertsCount();
   const alertsCount = { count: 6 };
 
   return (
-    <div className="d-flex flex-column h-100 p-3">
+    <div className="d-flex flex-column h-100 p-3 w-100">
       <div className="mb-4">
         <div className="fw-bold">Student Portal</div>
         <div className="text-muted small">University System</div>
@@ -56,26 +51,6 @@ export default function StudentSidebarContent({ onNavigate }) {
             )}
           </NavLink>
         ))}
-      </div>
-
-      <div className="mt-auto pt-3 border-top">
-        {loading || !summary ? (
-          <div className="text-muted small">Loading student...</div>
-        ) : (
-          <>
-            <div className="fw-semibold">{summary.fullName}</div>
-            <div className="text-muted small">{summary.studentId}</div>
-            <div className="text-muted small">GPA: {summary.currentGpa ?? "-"}</div>
-          </>
-        )}
-
-        <Button
-          className="mt-3 w-100"
-          label="Logout"
-          icon="pi pi-sign-out"
-          severity="secondary"
-          onClick={() => keycloak.logout()}
-        />
       </div>
     </div>
   );

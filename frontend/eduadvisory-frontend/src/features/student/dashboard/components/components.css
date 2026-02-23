@@ -1,0 +1,285 @@
+/* Outer container (like screenshot) */
+.alerts-box {
+  border: 1px solid;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+/* Header row */
+.alerts-box-header {
+  display: flex;
+  align-items: centert;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.alerts-box-titlewrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.alerts-box-icon {
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.alerts-box-titletext {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.alerts-box-title {
+  font-weight: 800;
+}
+
+.alerts-box-viewbtn.p-button {
+  padding: 4px 8px;
+  flex-shrink: 0;
+  color: black;
+}
+
+/* List */
+.alerts-box-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alerts-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.alerts-item-main {
+  min-width: 0;
+}
+
+.alerts-item-title {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-weight: 700;
+}
+
+.alerts-item-code {
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.06);
+  font-size: 12px;
+}
+
+.alerts-item-message {
+  margin-top: 2px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.alerts-item-tag {
+  flex-shrink: 0;
+}
+
+/* ===== severity themes ===== */
+.alerts-box-danger {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+.alerts-box-danger .alerts-box-icon {
+  color: #ef4444;
+}
+
+.alerts-box-warning {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+.alerts-box-warning .alerts-box-icon {
+  color: #f59e0b;
+}
+
+.alerts-box-info {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+.alerts-box-info .alerts-box-icon {
+  color: #3b82f6;
+}
+/* Prime Card cleanup */
+.stat-card.p-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.stat-card .p-card-body {
+  padding: 18px 20px;
+}
+
+.stat-card .p-card-content {
+  padding: 0; /* remove Prime default extra padding */
+}
+
+/* Title row */
+.stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #111827;
+  font-size: 14px;
+}
+
+.stat-card-icon {
+  font-size: 14px;
+  color: #111827;
+}
+
+/* Main value */
+.stat-card-value {
+  margin-top: 26px;        /* creates that airy spacing like screenshot */
+  font-size: 32px;
+  font-weight: 500;        /* screenshot looks not super-bold */
+  color: #111827;
+  line-height: 1.1;
+}
+
+/* Subtitle */
+.stat-card-subtitle {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.stat-value-success { color: #16a34a; }  
+.stat-value-danger  { color: #dc2626; } 
+.stat-value-blue    { color: #2563eb; } 
+.stat-value-purple  { color: #7c3aed; }
+
+/* Prime card cleanup */
+.course-card.p-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.course-card.p-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+}
+.course-card .p-card-body {
+  padding: 18px 20px;
+}
+.course-card .p-card-content {
+  padding: 0;
+}
+
+/* Top row */
+.course-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.course-card-left {
+  min-width: 0;
+}
+
+/* Title */
+.course-card-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.course-code {
+  font-weight: 800;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #111827;
+}
+.course-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Meta chips */
+.course-meta {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.course-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  font-size: 12px;
+  color: #374151;
+}
+
+/* Metrics grid */
+.course-metrics {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .course-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.metric-tile {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.metric-value {
+  margin-top: 4px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Absence progress */
+.course-abs-bar {
+  margin-top: 14px;
+}
+.course-abs-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.course-abs-label {
+  font-size: 12px;
+  color: #6b7280;
+}

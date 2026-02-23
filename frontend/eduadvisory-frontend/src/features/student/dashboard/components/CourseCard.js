@@ -1,6 +1,7 @@
 import { Card } from "primereact/card";
 import { Tag } from "primereact/tag";
-
+import { ProgressBar } from "primereact/progressbar";
+import "./components.css"
 function computeBadge(course) {
   const abs = course.absencesCount ?? 0;
   const max = course.maxAbsences ?? 0;
@@ -14,6 +15,11 @@ function computeBadge(course) {
   return { severity: "success", label: "On Track" };
 }
 
+function fmtScore(v) {
+  if (v === null || v === undefined) return "-";
+  return `${v}/100`;
+}
+
 export default function CourseCard({ course }) {
   const badge = computeBadge(course);
 
@@ -22,39 +28,71 @@ export default function CourseCard({ course }) {
   const proj = comps.find((c) => c.componentName === "PROJECT")?.grade;
   const lab = comps.find((c) => c.componentName === "LAB")?.grade;
 
+  const abs = course.absencesCount ?? 0;
+  const max = course.maxAbsences ?? 0;
+  const absPercent = max > 0 ? Math.min(100, Math.round((abs / max) * 100)) : 0;
+
   return (
-    <Card className="shadow-sm">
-      <div className="d-flex justify-content-between align-items-start">
-        <div>
-          <div className="fw-semibold">
-            {course.courseCode} - {course.courseName}
+    <Card className="course-card">
+      {/* Top row */}
+      <div className="course-card-top">
+        <div className="course-card-left">
+          <div className="course-card-title">
+            <span className="course-code">{course.courseCode}</span>
+            <span className="course-name">{course.courseName}</span>
           </div>
-          <div className="text-muted small">{course.credits} credits</div>
+
+          <div className="course-meta">
+            <span className="course-chip">
+              <i className="pi pi-book" /> {course.credits} credits
+            </span>
+
+            {max > 0 && (
+              <span className="course-chip">
+                <i className="pi pi-user-minus" /> Absences {abs}/{max}
+              </span>
+            )}
+          </div>
         </div>
 
         <Tag severity={badge.severity} value={badge.label} />
       </div>
 
-      <div className="row mt-3 g-3">
-        <div className="col-6 col-md-3">
-          <div className="text-muted small">Midterm</div>
-          <div className="fw-semibold">{mid ?? "-"}/100</div>
+      {/* Grades grid */}
+      <div className="course-metrics">
+        <div className="metric-tile">
+          <div className="metric-label">Midterm</div>
+          <div className="metric-value">{fmtScore(mid)}</div>
         </div>
-        <div className="col-6 col-md-3">
-          <div className="text-muted small">Project</div>
-          <div className="fw-semibold">{proj ?? "-"}/100</div>
+
+        <div className="metric-tile">
+          <div className="metric-label">Project</div>
+          <div className="metric-value">{fmtScore(proj)}</div>
         </div>
-        <div className="col-6 col-md-3">
-          <div className="text-muted small">Lab</div>
-          <div className="fw-semibold">{lab ?? "-"}/100</div>
+
+        <div className="metric-tile">
+          <div className="metric-label">Lab</div>
+          <div className="metric-value">{fmtScore(lab)}</div>
         </div>
-        <div className="col-6 col-md-3">
-          <div className="text-muted small">Absences</div>
-          <div className="fw-semibold">
-            {course.absencesCount ?? 0}/{course.maxAbsences ?? 0}
+
+        <div className="metric-tile">
+          <div className="metric-label">Absences</div>
+          <div className="metric-value">
+            {max > 0 ? `${abs}/${max}` : "-"}
           </div>
         </div>
       </div>
+
+      {/* Optional: absence progress */}
+      {max > 0 && (
+        <div className="course-abs-bar">
+          <div className="course-abs-row">
+            <span className="course-abs-label">Absence usage</span>
+            <span className="course-abs-label">{absPercent}%</span>
+          </div>
+          <ProgressBar value={absPercent} />
+        </div>
+      )}
     </Card>
   );
 }

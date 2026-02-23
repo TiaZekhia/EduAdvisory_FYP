@@ -1,0 +1,29 @@
+import { useNavigate } from "react-router-dom";
+import "./NotFoundPage.css";
+
+
+export default function NotFoundPage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="nf-wrapper">
+      <div className="nf-content">
+        <h1 className="nf-oops">Oops!</h1>
+
+        <h2 className="nf-title">404 - PAGE NOT FOUND</h2>
+
+        <p className="nf-text">
+          The page you are looking for might have been removed,
+          had its name changed or is temporarily unavailable.
+        </p>
+
+        <button
+          className="nf-btn"
+          onClick={() => navigate("/student/dashboard")}
+        >
+          GO TO HOMEPAGE
+        </button>
+      </div>
+    </div>
+  );
+}

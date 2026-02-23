@@ -9,6 +9,7 @@ import { useProgressSummary } from "./hooks/useProgressSummary";
 import { useProgressDepartments } from "./hooks/useProgressDepartments";
 import { useProgressHistory } from "./hooks/useProgressHistory";
 import { useStudyGuideComparison } from "./hooks/useStudyGuideComparison";
+import { PageHero } from "../../../shared/components/PageHero";
 
 export default function MyProgressPage() {
   const { summary } = useStudentSummary();
@@ -30,23 +31,17 @@ export default function MyProgressPage() {
   return (
     <div className="container-fluid p-3 p-md-4">
       {/* Page header */}
-      <div className="mb-3">
-        <h2 className="m-0">My Progress</h2>
-        <div className="text-muted">
-          {summary?.programCode} • Semester {summary?.currentSemester}
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <h4 className="mb-1">Academic Progress</h4>
-        <div className="text-muted">Detailed view of your academic journey and achievements</div>
-      </div>
-
+      <PageHero
+        title="My Progress"
+        badge={`${summary?.programCode} • Semester ${summary?.currentSemester}`}
+        subtitle="Detailed view of your academic journey and achievements"
+      />
       {/* ===== Degree Completion Progress ===== */}
       <Card className="shadow-sm border-0 mb-4">
         <div className="fw-semibold fs-5">Degree Completion Progress</div>
         <div className="text-muted mb-3">
-          Your progress towards <span className="text-primary">{summary?.programCode}</span> degree
+          Your progress towards{" "}
+          <span className="text-primary">{summary?.programCode}</span> degree
         </div>
 
         <div className="d-flex justify-content-between align-items-center mb-2">
@@ -59,7 +54,10 @@ export default function MyProgressPage() {
         {/* KPI cards */}
         <div className="row g-3 mt-3">
           <KpiBox value={progress?.creditsEarned ?? 0} label="Credits Earned" />
-          <KpiBox value={progress?.creditsRemaining ?? 0} label="Credits Remaining" />
+          <KpiBox
+            value={progress?.creditsRemaining ?? 0}
+            label="Credits Remaining"
+          />
           <KpiBox value={progress?.coursesPassed ?? 0} label="Courses Passed" />
           <KpiBox value={progress?.coursesFailed ?? 0} label="Courses Failed" />
         </div>
@@ -84,7 +82,9 @@ export default function MyProgressPage() {
       {/* ===== Course History ===== */}
       <Card className="shadow-sm border-0 mb-4">
         <div className="fw-semibold fs-5">Course History</div>
-        <div className="text-muted mb-3">All your enrolled courses by semester</div>
+        <div className="text-muted mb-3">
+          All your enrolled courses by semester
+        </div>
 
         {semesters.length > 0 && (
           <TabMenu
@@ -100,15 +100,21 @@ export default function MyProgressPage() {
           <div className="p-3 rounded bg-light d-flex justify-content-between align-items-center mb-3">
             <div>
               <div className="text-muted small">Semester GPA</div>
-              <div className="fs-3 fw-semibold">{activeSemester.semesterGpa}</div>
+              <div className="fs-3 fw-semibold">
+                {activeSemester.semesterGpa}
+              </div>
             </div>
             <div>
               <div className="text-muted small text-end">Credits</div>
-              <div className="fs-3 fw-semibold text-end">{activeSemester.credits}</div>
+              <div className="fs-3 fw-semibold text-end">
+                {activeSemester.credits}
+              </div>
             </div>
             <div>
               <div className="text-muted small text-end">Courses</div>
-              <div className="fs-3 fw-semibold text-end">{activeSemester.coursesCount}</div>
+              <div className="fs-3 fw-semibold text-end">
+                {activeSemester.coursesCount}
+              </div>
             </div>
           </div>
         )}
@@ -126,13 +132,18 @@ export default function MyProgressPage() {
                     </span>
                   </div>
                   <div className="text-muted small mt-1">
-                    Prerequisites: {c.prerequisites?.length ? c.prerequisites.join(", ") : "None"}
+                    Prerequisites:{" "}
+                    {c.prerequisites?.length
+                      ? c.prerequisites.join(", ")
+                      : "None"}
                   </div>
                 </div>
 
                 <div className="text-end">
                   <div className="text-muted small">Grade</div>
-                  <div className={`fw-bold ${c.status === "FAILED" ? "text-danger" : "text-success"}`}>
+                  <div
+                    className={`fw-bold ${c.status === "FAILED" ? "text-danger" : "text-success"}`}
+                  >
                     {c.finalGrade}%
                   </div>
 
@@ -152,17 +163,26 @@ export default function MyProgressPage() {
       {/* ===== Study Guide Comparison ===== */}
       <Card className="shadow-sm border-0">
         <div className="fw-semibold fs-5">Study Guide Comparison</div>
-        <div className="text-muted mb-3">Your progress compared to the recommended study guide</div>
+        <div className="text-muted mb-3">
+          Your progress compared to the recommended study guide
+        </div>
 
         {(comparison ?? []).map((row) => {
-          const pct = row.total > 0 ? Math.round((row.completed / row.total) * 100) : 0;
+          const pct =
+            row.total > 0 ? Math.round((row.completed / row.total) * 100) : 0;
           const sev = pct >= 70 ? "success" : pct >= 40 ? "warning" : "danger";
 
           return (
             <div key={row.recommendedSemester} className="mb-3">
               <div className="d-flex justify-content-between align-items-center mb-2">
-                <div className="fw-semibold">Semester {row.recommendedSemester}</div>
-                <Tag value={`${row.completed}/${row.total} completed`} severity={sev} rounded />
+                <div className="fw-semibold">
+                  Semester {row.recommendedSemester}
+                </div>
+                <Tag
+                  value={`${row.completed}/${row.total} completed`}
+                  severity={sev}
+                  rounded
+                />
               </div>
 
               <ProgressBar value={pct} />
