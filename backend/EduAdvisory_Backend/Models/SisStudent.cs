@@ -29,7 +29,7 @@ public partial class SisStudent
     public int? CurrentSemester { get; set; }
 
     [Column("current_gpa")]
-    [Precision(3, 2)]
+    [Precision(5, 2)]
     public decimal? CurrentGpa { get; set; }
 
     [Column("academic_status")]

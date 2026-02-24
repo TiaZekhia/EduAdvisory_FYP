@@ -156,7 +156,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <ProgressBar value={degreeProgress?.percentComplete ?? 0} />
+            <ProgressBar value={degreeProgress?.percentComplete ?? 0} showValue={false} className="deg-progressbar" />
 
             <div className="row text-center mt-3">
               <div className="col">

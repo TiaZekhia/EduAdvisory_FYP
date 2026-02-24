@@ -60,3 +60,14 @@
   align-items:flex-end;
   gap:12px;
 }
+.deg-progressbar.p-progressbar {
+  height: 12px;
+  border-radius: 999px;
+  background: #d1d5db;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.deg-progressbar .p-progressbar-value {
+  background: #111827;
+}
