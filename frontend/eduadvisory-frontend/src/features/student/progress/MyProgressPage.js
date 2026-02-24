@@ -10,6 +10,7 @@ import { useProgressDepartments } from "./hooks/useProgressDepartments";
 import { useProgressHistory } from "./hooks/useProgressHistory";
 import { useStudyGuideComparison } from "./hooks/useStudyGuideComparison";
 import { PageHero } from "../../../shared/components/PageHero";
+import "./MyProgressPage.css";
 
 export default function MyProgressPage() {
   const { summary } = useStudentSummary();
@@ -37,101 +38,132 @@ export default function MyProgressPage() {
         subtitle="Detailed view of your academic journey and achievements"
       />
       {/* ===== Degree Completion Progress ===== */}
-      <Card className="shadow-sm border-0 mb-4">
-        <div className="fw-semibold fs-5">Degree Completion Progress</div>
-        <div className="text-muted mb-3">
-          Your progress towards{" "}
-          <span className="text-primary">{summary?.programCode}</span> degree
+      <Card className="deg-card mb-4">
+        <div className="deg-head">
+          <div className="deg-title">Degree Completion Progress</div>
+          <div className="deg-subtitle">
+            Your progress towards{" "}
+            <span className="deg-program">{summary?.programCode}</span> degree
+          </div>
         </div>
 
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <div className="text-muted">Overall Progress</div>
-          <div className="text-muted">{progress?.percentComplete ?? 0}%</div>
+        <div className="deg-progress-row">
+          <div className="deg-progress-label">Overall Progress</div>
+          <div className="deg-progress-pct">
+            {(progress?.percentComplete ?? 0).toFixed?.(1) ??
+              progress?.percentComplete ??
+              0}
+            %
+          </div>
         </div>
 
-        <ProgressBar value={progress?.percentComplete ?? 0} />
+        <ProgressBar
+          value={progress?.percentComplete ?? 0}
+          showValue={false}
+          className="deg-progressbar"
+        />
 
-        {/* KPI cards */}
+        {/* KPI tiles */}
         <div className="row g-3 mt-3">
-          <KpiBox value={progress?.creditsEarned ?? 0} label="Credits Earned" />
-          <KpiBox
+          <KpiTile
+            icon="pi pi-bookmark"
+            iconClassName="kpi-icon-gold"
+            value={progress?.creditsEarned ?? 0}
+            label="Credits Earned"
+          />
+          <KpiTile
+            icon="pi pi-clock"
+            iconClassName="kpi-icon-blue"
             value={progress?.creditsRemaining ?? 0}
             label="Credits Remaining"
           />
-          <KpiBox value={progress?.coursesPassed ?? 0} label="Courses Passed" />
-          <KpiBox value={progress?.coursesFailed ?? 0} label="Courses Failed" />
+          <KpiTile
+            icon="pi pi-check-circle"
+            iconClassName="kpi-icon-green"
+            value={progress?.coursesPassed ?? 0}
+            label="Courses Passed"
+          />
+          <KpiTile
+            icon="pi pi-times-circle"
+            iconClassName="kpi-icon-red"
+            value={progress?.coursesFailed ?? 0}
+            label="Courses Failed"
+          />
         </div>
 
-        {/* Departments chips */}
-        <div className="mt-4">
-          <div className="fw-semibold mb-2">Credits by Department:</div>
+        <div className="deg-divider" />
 
-          <div className="d-flex flex-wrap gap-2">
+        {/* Departments */}
+        <div className="deg-dept">
+          <div className="deg-dept-title">Credits by Department:</div>
+
+          <div className="deg-dept-chips">
             {(departments ?? []).map((d) => (
-              <Tag
-                key={d.department}
-                value={`${d.department} ${d.coursesCount} course(s)`}
-                rounded
-                className="px-3 py-2"
-              />
+              <span key={d.department} className="dept-chip">
+                <span className="dept-chip-code">{d.department}</span>
+                <span className="dept-chip-text">
+                  {d.coursesCount} course(s)
+                </span>
+              </span>
             ))}
           </div>
         </div>
       </Card>
 
       {/* ===== Course History ===== */}
-      <Card className="shadow-sm border-0 mb-4">
-        <div className="fw-semibold fs-5">Course History</div>
-        <div className="text-muted mb-3">
-          All your enrolled courses by semester
-        </div>
+      <Card className="ch-card mb-4">
+        <div className="ch-title">Course History</div>
+        <div className="ch-subtitle">All your enrolled courses by semester</div>
 
         {semesters.length > 0 && (
           <TabMenu
             model={semesters}
             activeIndex={activeIndex}
             onTabChange={(e) => setActiveIndex(e.index)}
-            className="mb-3"
+            className="ch-tabs"
           />
         )}
 
         {/* semester summary row */}
         {activeSemester && (
-          <div className="p-3 rounded bg-light d-flex justify-content-between align-items-center mb-3">
-            <div>
-              <div className="text-muted small">Semester GPA</div>
-              <div className="fs-3 fw-semibold">
+          <div className="ch-summary">
+            <div className="ch-summary-item">
+              <div className="ch-summary-label">Semester GPA</div>
+              <div className="ch-summary-value">
                 {activeSemester.semesterGpa}
               </div>
             </div>
-            <div>
-              <div className="text-muted small text-end">Credits</div>
-              <div className="fs-3 fw-semibold text-end">
-                {activeSemester.credits}
-              </div>
+
+            <div className="ch-summary-item">
+              <div className="ch-summary-label">Credits</div>
+              <div className="ch-summary-value">{activeSemester.credits}</div>
             </div>
-            <div>
-              <div className="text-muted small text-end">Courses</div>
-              <div className="fs-3 fw-semibold text-end">
+
+            <div className="ch-summary-item">
+              <div className="ch-summary-label">Courses</div>
+              <div className="ch-summary-value">
                 {activeSemester.coursesCount}
               </div>
             </div>
           </div>
         )}
 
-        {/* course cards */}
-        <div className="d-flex flex-column gap-3">
-          {(activeSemester?.courses ?? []).map((c) => (
-            <div key={c.courseCode} className="border rounded p-3 bg-white">
-              <div className="d-flex justify-content-between">
-                <div>
-                  <div className="fw-semibold">
-                    {c.courseCode} - {c.courseName}{" "}
-                    <span className="badge bg-light text-dark border ms-2">
-                      {c.credits} credits
+        {/* course rows */}
+        <div className="ch-list">
+          {(activeSemester?.courses ?? []).map((c) => {
+            const failed = c.status === "FAILED";
+            return (
+              <div key={c.courseCode} className="ch-row">
+                <div className="ch-row-left">
+                  <div className="ch-course-title">
+                    <span className="ch-course-name">
+                      {c.courseCode} - {c.courseName}
                     </span>
+
+                    <span className="ch-credit-chip">{c.credits} credits</span>
                   </div>
-                  <div className="text-muted small mt-1">
+
+                  <div className="ch-prereq">
                     Prerequisites:{" "}
                     {c.prerequisites?.length
                       ? c.prerequisites.join(", ")
@@ -139,53 +171,61 @@ export default function MyProgressPage() {
                   </div>
                 </div>
 
-                <div className="text-end">
-                  <div className="text-muted small">Grade</div>
+                <div className="ch-row-right">
+                  <div className="ch-grade-label">Grade</div>
                   <div
-                    className={`fw-bold ${c.status === "FAILED" ? "text-danger" : "text-success"}`}
+                    className={`ch-grade ${failed ? "is-failed" : "is-passed"}`}
                   >
-                    {c.finalGrade}%
+                    {c.finalGrade}/100
                   </div>
 
                   <Tag
                     value={c.status?.toLowerCase()}
-                    severity={c.status === "FAILED" ? "danger" : "success"}
-                    className="mt-2"
+                    severity={failed ? "danger" : "success"}
                     rounded
+                    className="ch-status"
                   />
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
       {/* ===== Study Guide Comparison ===== */}
-      <Card className="shadow-sm border-0">
-        <div className="fw-semibold fs-5">Study Guide Comparison</div>
-        <div className="text-muted mb-3">
+      <Card className="sg-card">
+        <div className="sg-title">Study Guide Comparison</div>
+        <div className="sg-subtitle">
           Your progress compared to the recommended study guide
         </div>
 
         {(comparison ?? []).map((row) => {
           const pct =
             row.total > 0 ? Math.round((row.completed / row.total) * 100) : 0;
-          const sev = pct >= 70 ? "success" : pct >= 40 ? "warning" : "danger";
+
+          const sev =
+            pct === 100 ? "success" : pct >= 50 ? "secondary" : "danger";
 
           return (
-            <div key={row.recommendedSemester} className="mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <div className="fw-semibold">
-                  Semester {row.recommendedSemester}
+            <div key={row.recommendedSemester} className="sg-row">
+              <div className="sg-row-head">
+                <div className="sg-row-title">
+                  Semester {row.recommendedSemester}: {row.termName ?? ""}
                 </div>
+
                 <Tag
                   value={`${row.completed}/${row.total} completed`}
                   severity={sev}
                   rounded
+                  className="sg-tag"
                 />
               </div>
 
-              <ProgressBar value={pct} />
+              <ProgressBar
+                value={pct}
+                showValue={false}
+                className="sg-progress"
+              />
             </div>
           );
         })}
@@ -194,12 +234,13 @@ export default function MyProgressPage() {
   );
 }
 
-function KpiBox({ value, label }) {
+function KpiTile({ icon, iconClassName = "", value, label }) {
   return (
     <div className="col-12 col-md-6 col-lg-3">
-      <div className="border rounded bg-white p-3 text-center h-100">
-        <div className="fs-2 fw-semibold">{value}</div>
-        <div className="text-muted">{label}</div>
+      <div className="kpi-tile">
+        <i className={`${icon} kpi-icon ${iconClassName}`} />
+        <div className="kpi-value">{value}</div>
+        <div className="kpi-label">{label}</div>
       </div>
     </div>
   );

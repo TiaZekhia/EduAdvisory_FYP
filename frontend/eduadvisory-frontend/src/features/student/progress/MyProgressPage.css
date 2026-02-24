@@ -1,0 +1,394 @@
+/* Outer card like screenshot */
+.deg-card.p-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.deg-card .p-card-body {
+  padding: 18px 20px;
+}
+
+.deg-card .p-card-content {
+  padding: 0;
+}
+
+/* Header */
+.deg-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #111827;
+}
+
+.deg-subtitle {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.deg-program {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* Overall progress row */
+.deg-progress-row {
+  margin-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deg-progress-label,
+.deg-progress-pct {
+  color: #111827;
+  font-size: 13px;
+}
+
+.deg-progress-pct {
+  font-weight: 600;
+}
+
+/* Progressbar style (dark fill + light track) */
+.deg-progressbar.p-progressbar {
+  height: 12px;
+  border-radius: 999px;
+  background: #d1d5db;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.deg-progressbar .p-progressbar-value {
+  background: #111827; /* dark fill like image */
+}
+
+/* KPI tiles */
+.kpi-tile {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px 14px;
+  text-align: center;
+  background: #fff;
+  height: 100%;
+}
+
+.kpi-icon {
+  font-size: 22px;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+
+.kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.1;
+}
+
+.kpi-label {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* icon colors like screenshot */
+.kpi-icon-gold { color: #f59e0b; }
+.kpi-icon-blue { color: #3b82f6; }
+.kpi-icon-green { color: #22c55e; }
+.kpi-icon-red { color: #ef4444; }
+
+/* Divider line */
+.deg-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 18px 0 14px;
+}
+
+/* Departments */
+.deg-dept-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.deg-dept-chips {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* Chip like screenshot (outlined pill + small code pill) */
+.dept-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.dept-chip-code {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.dept-chip-text {
+  font-size: 12px;
+  color: #111827;
+}
+/* ===== Outer Card ===== */
+.ch-card.p-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.ch-card .p-card-body {
+  padding: 18px 20px;
+}
+
+.ch-card .p-card-content {
+  padding: 0;
+}
+
+.ch-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #111827;
+}
+
+.ch-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 14px;
+}
+
+/* ===== Tabs (pill segmented look) ===== */
+.ch-tabs.p-tabmenu .p-tabmenu-nav {
+  border: 0;
+  background: #f3f4f6;
+  padding: 6px;
+  border-radius: 999px;
+  gap: 6px;
+}
+
+.ch-tabs.p-tabmenu .p-tabmenu-nav .p-tabmenuitem .p-menuitem-link {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: transparent;
+  color: #111827;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.ch-tabs.p-tabmenu .p-tabmenu-nav .p-tabmenuitem.p-highlight .p-menuitem-link {
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+/* remove blue underline from tabmenu */
+.ch-tabs.p-tabmenu .p-tabmenu-nav .p-tabmenuitem.p-highlight .p-menuitem-link::after {
+  display: none;
+}
+
+/* ===== Summary strip ===== */
+.ch-summary {
+  margin-top: 14px;
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 18px 22px;
+
+  display: flex;
+  justify-content: space-between; /* 👈 this is what you wanted */
+  align-items: center;
+}
+
+/* Each block */
+.ch-summary-item {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Optional: center the middle item visually */
+.ch-summary-item:nth-child(2) {
+  text-align: center;
+}
+
+/* Right align last item */
+.ch-summary-item:last-child {
+  text-align: right;
+}
+
+/* Label */
+.ch-summary-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Value */
+.ch-summary-value {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.1;
+}
+
+/* ===== Course list ===== */
+.ch-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ch-row {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px 16px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.ch-row-left {
+  min-width: 0;
+}
+
+.ch-course-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ch-course-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.ch-credit-chip {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.ch-prereq {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Right column (grade + tag) */
+.ch-row-right {
+  text-align: right;
+  min-width: 110px;
+}
+
+.ch-grade-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.ch-grade {
+  margin-top: 4px;
+  font-weight: 800;
+}
+
+.ch-grade.is-passed {
+  color: #16a34a;
+}
+
+.ch-grade.is-failed {
+  color: #dc2626;
+}
+
+.ch-status {
+  margin-top: 10px;
+}
+/* Outer card */
+.sg-card.p-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.sg-card .p-card-body {
+  padding: 18px 20px;
+}
+
+.sg-card .p-card-content {
+  padding: 0;
+}
+
+.sg-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #111827;
+}
+
+.sg-subtitle {
+  margin-top: 4px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Each semester row */
+.sg-row {
+  margin-top: 14px;
+}
+
+.sg-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sg-row-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #111827;
+}
+
+/* Tag tweaks to look like compact pill */
+.sg-tag.p-tag {
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+/* Progress bar like screenshot (thin + dark fill) */
+.sg-progress.p-progressbar {
+  height: 8px;
+  border-radius: 999px;
+  background: #d1d5db;
+  overflow: hidden;
+}
+
+.sg-progress .p-progressbar-value {
+  background: #111827; /* dark fill like screenshot */
+}
+
+/* Ensure label never appears */
+.sg-progress .p-progressbar-label {
+  display: none !important;
+}

@@ -90,7 +90,7 @@ export default function CourseCard({ course }) {
             <span className="course-abs-label">Absence usage</span>
             <span className="course-abs-label">{absPercent}%</span>
           </div>
-          <ProgressBar value={absPercent} />
+          <ProgressBar value={absPercent} showValue={false} className="deg-progressbar" />
         </div>
       )}
     </Card>
