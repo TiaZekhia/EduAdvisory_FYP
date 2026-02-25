@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EduAdvisory_Backend.DTOs.Course;
 using EduAdvisory_Backend.DTOs.Student;
+using EduAdvisory_Backend.Interfaces.Services;
 
 namespace EduAdvisory_Backend.Controllers
 {
@@ -13,10 +14,12 @@ namespace EduAdvisory_Backend.Controllers
     public class StudentsController : ControllerBase
     {
         private readonly IStudentRepository _studentRepo;
+        private readonly ICoursePlanService _coursePlanService;
 
-        public StudentsController(IStudentRepository studentRepo)
+        public StudentsController(IStudentRepository studentRepo, ICoursePlanService coursePlanService)
         {
             _studentRepo = studentRepo;
+            _coursePlanService = coursePlanService;
         }
 
         [HttpGet("me/summary")]
@@ -198,6 +201,19 @@ namespace EduAdvisory_Backend.Controllers
             if (student == null) return NotFound("Student not linked to this user.");
 
             return Ok(_studentRepo.GetStudyGuideComparison(student.StudentId));
+        }
+
+        [HttpGet("me/course-plan/plans")]
+        public IActionResult GetMyGeneratedPlans([FromQuery] int count = 3)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null) return NotFound("Student not linked to this user.");
+
+            var plans = _coursePlanService.GeneratePlansForStudent(student.StudentId, count);
+            return Ok(plans);
         }
     }
 }

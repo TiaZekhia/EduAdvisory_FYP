@@ -22,5 +22,12 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         List<DepartmentCreditsDto> GetProgressDepartments(int studentId);
         List<SemesterHistoryDto> GetProgressHistory(int studentId);
         List<StudyGuideComparisonDto> GetStudyGuideComparison(int studentId);
+
+        List<string> GetPassedCourses(int studentId);
+        List<string> GetFailedNotRetakenCourses(int studentId);
+        Dictionary<string, int> GetStudyGuideRecommendedSemester(string programCode); // courseCode -> recommendedSemester
+        Dictionary<string, (string name, int credits)> GetCoursesMeta(List<string> courseCodes);
+
+        Dictionary<string, List<string>> GetPrerequisitesMap(List<string> courseCodes); // course -> prereqs
     }
 }
