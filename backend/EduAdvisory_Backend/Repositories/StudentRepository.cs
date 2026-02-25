@@ -502,6 +502,60 @@ namespace EduAdvisory_Backend.Repositories
             return result;
         }
 
+        public List<string> GetPassedCourses(int studentId)
+        {
+            return _context.SisStudentCourseHistories
+                .Where(h => h.StudentId == studentId && h.Status == "PASSED")
+                .Select(h => h.CourseCode)
+                .Distinct()
+                .ToList();
+        }
+
+        public List<string> GetFailedNotRetakenCourses(int studentId)
+        {
+            var passed = GetPassedCourses(studentId).ToHashSet();
+
+            return _context.SisStudentCourseHistories
+                .Where(h => h.StudentId == studentId && h.Status == "FAILED")
+                .Select(h => h.CourseCode)
+                .Distinct()
+                .AsEnumerable()
+                .Where(code => !passed.Contains(code))
+                .ToList();
+        }
+
+        public Dictionary<string, int> GetStudyGuideRecommendedSemester(string programCode)
+        {
+            return _context.StudyGuides
+                .Where(sg => sg.ProgramCode == programCode && sg.RecommendedSemester != null)
+                .GroupBy(sg => sg.CourseCode)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Min(x => x.RecommendedSemester ?? 0)
+                );
+        }
+
+        public Dictionary<string, (string name, int credits)> GetCoursesMeta(List<string> courseCodes)
+        {
+            return _context.SisCourses
+                .Where(c => courseCodes.Contains(c.CourseCode))
+                .ToDictionary(c => c.CourseCode, c => (c.CourseName, c.Credits));
+        }
+
+        public Dictionary<string, List<string>> GetPrerequisitesMap(List<string> courseCodes)
+        {
+            var prereqs = _context.CoursePrerequisites
+                .Where(p => courseCodes.Contains(p.CourseCode))
+                .ToList();
+
+            return prereqs
+                .GroupBy(p => p.CourseCode)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.PrerequisiteCourseCode).Distinct().ToList()
+                );
+        }
+
     }
 
 }
