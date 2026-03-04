@@ -6,5 +6,6 @@
         public string Strategy { get; set; } = ""; // e.g. "Balanced", "Fast blockers", etc.
         public List<PlannedSemesterDto> Semesters { get; set; } = new();
         public CoursePlanMetricsDto Metrics { get; set; } = new();
+
     }
 }

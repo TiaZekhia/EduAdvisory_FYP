@@ -27,21 +27,45 @@ useEffect(() => {
   const { summary } = useStudentSummary();
 
   const [plans, setPlans] = useState([]);
-  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+const [insights, setInsights] = useState(null);
+const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+const [loading, setLoading] = useState(true);
+const [err, setErr] = useState("");
 
-  useEffect(() => {
-    setLoading(true);
-    setErr("");
+const loadInsights = () => {
+  setLoading(true);
+  setErr("");
 
-    studentCoursePlanApi.getPlans(3)
-    .then(res => setPlans(res.data))
-    .catch(e => setErr(e?.message || "Failed to load course plans"))
+  studentCoursePlanApi.getInsights(3)
+    .then(res => {
+      const p = res.data?.plans || [];
+      const ai = res.data?.insights || null;
+
+      setPlans(p);
+      setInsights(ai);
+
+      const best = ai?.bestPlanIndex;
+      setSelectedPlanIndex(typeof best === "number" ? best : 0);
+    })
+    .catch(e => setErr(e?.response?.data ?? e?.message ?? "Failed to load insights"))
     .finally(() => setLoading(false));
-  }, []);
+};
 
-  const selected = useMemo(() => plans[selectedPlanIndex], [plans, selectedPlanIndex]);
+useEffect(() => {
+  loadInsights();
+}, []);
+
+const selected = useMemo(() => plans[selectedPlanIndex], [plans, selectedPlanIndex]);
+
+const selectedInsight = insights?.planInsights?.find(x => x.planIndex === selectedPlanIndex);
+
+// rank = position when sorting by score desc
+const selectedRank = useMemo(() => {
+  if (!insights?.planInsights?.length) return null;
+  const ordered = [...insights.planInsights].sort((a,b) => b.score - a.score);
+  const idx = ordered.findIndex(x => x.planIndex === selectedPlanIndex);
+  return idx >= 0 ? idx + 1 : null;
+}, [insights, selectedPlanIndex]);
 
   if (loading) {
     return (
@@ -87,10 +111,61 @@ useEffect(() => {
           </div>
 
           <div className="d-flex gap-2">
-            <Button icon="pi pi-refresh" label="Regenerate" outlined onClick={loadPlans} />
+<Button icon="pi pi-refresh" label="Regenerate" outlined onClick={loadInsights} />
             <Button icon="pi pi-download" label="Export Plan" severity="secondary" disabled />
           </div>
         </div>
+        <div className="mt-2">
+</div>
+
+{insights && (
+  <Card className="shadow-sm border-0 mb-3">
+    <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <div className="fw-semibold">AI Recommendation</div>
+        <div className="text-muted">{insights.bestPlanSummary}</div>
+      </div>
+      <Tag value={`Recommended: Plan ${insights.bestPlanIndex + 1}`} severity="success" />
+    </div>
+  </Card>
+)}
+
+{selectedInsight && (
+  <div className="mt-2 d-flex gap-2 flex-wrap">
+    {selectedRank && <Tag value={`Rank #${selectedRank}`} severity="info" />}
+    <Tag value={`Score ${selectedInsight.score}/100`} severity="info" />
+  </div>
+)}
+{selectedInsight && (
+  <Card className="shadow-sm border-0 mb-4">
+    <div className="d-flex align-items-center gap-2 mb-2">
+      <Tag value={`Score ${selectedInsight.score}/100`} severity="info" />
+      <Tag value={`Plan ${selectedPlanIndex + 1}`} />
+    </div>
+    <div className="text-muted mb-3">{selectedInsight.explanation}</div>
+
+    <div className="row g-3">
+      <div className="col-12 col-md-4">
+        <div className="fw-semibold mb-2">Pros</div>
+        <ul className="mb-0">
+          {selectedInsight.pros.map((p,i)=><li key={i}>{p}</li>)}
+        </ul>
+      </div>
+      <div className="col-12 col-md-4">
+        <div className="fw-semibold mb-2">Cons</div>
+        <ul className="mb-0">
+          {selectedInsight.cons.map((c,i)=><li key={i}>{c}</li>)}
+        </ul>
+      </div>
+      <div className="col-12 col-md-4">
+        <div className="fw-semibold mb-2">Warnings</div>
+        <ul className="mb-0">
+          {selectedInsight.warnings.length ? selectedInsight.warnings.map((w,i)=><li key={i}>{w}</li>) : <li>None</li>}
+        </ul>
+      </div>
+    </div>
+  </Card>
+)}
 
         {/* KPI row */}
         <div className="row g-3 mt-3">
