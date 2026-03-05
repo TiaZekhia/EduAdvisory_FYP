@@ -43,7 +43,7 @@ namespace EduAdvisory_Backend.Services
 
             // IMPORTANT: pick a model that exists in Responses API model list (example: gpt-4o-mini)
             // (gpt-4.1-mini is not listed in the Responses API create reference you’re using)
-            var model = Environment.GetEnvironmentVariable("OPENAI_MODEL");
+            var model = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-4o-mini";
 
             // Compact payload (keep it small)
             var compact = new
