@@ -1,8 +1,10 @@
 ﻿using EduAdvisory_Backend.DTOs.Course;
+using EduAdvisory_Backend.DTOs.Meetings;
 using EduAdvisory_Backend.DTOs.Student;
 using EduAdvisory_Backend.Interfaces.Repositories;
 using EduAdvisory_Backend.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Text.RegularExpressions;
 
 
@@ -500,6 +502,105 @@ namespace EduAdvisory_Backend.Repositories
                 .ToList();
 
             return result;
+        }
+
+        public StudentMeetingsSummaryDto GetStudentMeetingsSummary(int studentId)
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            var total = _context.Meetings.Count(m => m.StudentId == studentId);
+            var upcoming = _context.Meetings.Count(m => m.StudentId == studentId && m.MeetingDate >= now);
+            var past = _context.Meetings.Count(m => m.StudentId == studentId && m.MeetingDate < now);
+
+            return new StudentMeetingsSummaryDto
+            {
+                UpcomingMeetings = upcoming,
+                PastMeetings = past,
+                TotalMeetings = total
+            };
+        }
+        public List<StudentMeetingDto> GetUpcomingMeetings(int studentId, int limit = 3)
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            return _context.Meetings
+                .Where(m => m.StudentId == studentId && m.MeetingDate != null && m.MeetingDate >= now)
+                .Join(_context.Advisors,
+                    m => m.AdvisorId,
+                    a => a.AdvisorId,
+                    (m, a) => new StudentMeetingDto
+                    {
+                        MeetingId = m.MeetingId,
+                        MeetingDate = m.MeetingDate!.Value,
+                        MeetingType = m.MeetingType ?? "",
+                        Title = ToTitle(m.MeetingType ?? ""),
+                        Status = "scheduled",
+                        Notes = m.Notes,
+                        AdvisorId = a.AdvisorId,
+                        AdvisorName = a.Name,
+                        AdvisorEmail = a.Email
+                    })
+                .OrderBy(x => x.MeetingDate)
+                .Take(limit)
+                .ToList();
+        }
+        public List<StudentMeetingDto> GetPastMeetings(int studentId, int limit = 10)
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            return _context.Meetings
+                .Where(m => m.StudentId == studentId && m.MeetingDate != null && m.MeetingDate < now)
+                .Join(_context.Advisors,
+                    m => m.AdvisorId,
+                    a => a.AdvisorId,
+                    (m, a) => new StudentMeetingDto
+                    {
+                        MeetingId = m.MeetingId,
+                        MeetingDate = m.MeetingDate!.Value,
+                        MeetingType = m.MeetingType ?? "",
+                        Title = ToTitle(m.MeetingType ?? ""),
+                        Status = "completed",
+                        Notes = m.Notes,
+                        AdvisorId = a.AdvisorId,
+                        AdvisorName = a.Name,
+                        AdvisorEmail = a.Email
+                    })
+                .OrderByDescending(x => x.MeetingDate)
+                .Take(limit)
+                .ToList();
+        }
+        public StudentAdvisorDto? GetStudentAdvisor(int studentId)
+        {
+            // Student -> Advisor
+            var advisor = _context.SisStudents
+                .Where(s => s.StudentId == studentId)
+                .Join(_context.Advisors,
+                    s => s.AdvisorId,
+                    a => a.AdvisorId,
+                    (s, a) => new StudentAdvisorDto
+                    {
+                        AdvisorId = a.AdvisorId,
+                        Name = a.Name,
+                        Email = a.Email,
+
+                        // Not in schema => UI placeholders
+                        OfficeHours = "Mon, Wed, Fri: 2-4 PM",
+                        Availability = "Available"
+                    })
+                .FirstOrDefault();
+
+            return advisor;
+        }
+
+        private static string ToTitle(string meetingType)
+        {
+            return meetingType switch
+            {
+                "MID_SEMESTER" => "Mid-Semester Progress Check",
+                "COURSE_SELECTION" => "Course Selection Discussion",
+                "PROGRESS_REVIEW" => "Progress Review",
+                _ => meetingType.Replace("_", " ")
+            };
         }
 
     }
