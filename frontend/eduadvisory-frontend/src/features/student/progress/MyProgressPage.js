@@ -11,14 +11,17 @@ import { useProgressHistory } from "./hooks/useProgressHistory";
 import { useStudyGuideComparison } from "./hooks/useStudyGuideComparison";
 import { PageHero } from "../../../shared/components/PageHero";
 import "./MyProgressPage.css";
+import { Skeleton } from "primereact/skeleton";
 
 export default function MyProgressPage() {
   const { summary } = useStudentSummary();
 
-  const { data: progress } = useProgressSummary();
-  const { data: departments } = useProgressDepartments();
-  const { data: history } = useProgressHistory();
-  const { data: comparison } = useStudyGuideComparison();
+const { data: progress, isLoading: loadingSummary } = useProgressSummary();
+const { data: departments, isLoading: loadingDepartments } = useProgressDepartments();
+const { data: history, isLoading: loadingHistory } = useProgressHistory();
+const { data: comparison, isLoading: loadingComparison } = useStudyGuideComparison();
+
+const loading = loadingSummary || loadingDepartments || loadingHistory || loadingComparison;
 
   const semesters = useMemo(() => {
     if (!history) return [];
@@ -28,6 +31,18 @@ export default function MyProgressPage() {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const activeSemester = history?.[activeIndex];
+
+   if (loading) {
+  return (
+    <div className="container-fluid p-3 p-md-4">
+      <Skeleton width="12rem" height="2rem" className="mb-2" />
+      <Skeleton width="28rem" height="1.25rem" className="mb-4" />
+      <Skeleton height="13rem" className="mb-4" />
+      <Skeleton height="18rem" className="mb-4" />
+      <Skeleton height="14rem" />
+    </div>
+  );
+}
 
   return (
     <div className="container-fluid p-3 p-md-4">

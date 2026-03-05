@@ -1,0 +1,358 @@
+/* Page background like screenshots */
+.cp-page {
+  min-height: 100%;
+  background: #f6f8fc;
+}
+
+.cp-container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Banner */
+.cp-banner-card {
+  border: 0;
+  box-shadow: 0 4px 14px rgba(16, 24, 40, 0.06);
+  margin-bottom: 1rem;
+  border-radius: 14px;
+}
+
+.cp-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cp-banner-title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.cp-banner-sub {
+  color: #667085;
+  font-size: 0.875rem;
+  margin-top: 2px;
+}
+
+/* Header card */
+.cp-header-card {
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+  margin-bottom: 1rem;
+}
+
+.cp-header-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cp-title {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.cp-subtitle {
+  color: #667085;
+  margin-top: 2px;
+  font-size: 0.95rem;
+}
+
+.cp-strategy {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #667085;
+}
+
+.cp-strategy span {
+  font-weight: 700;
+  color: #111827;
+}
+
+.cp-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+/* KPI grid like the top metrics */
+.cp-kpi-grid {
+  margin-top: 1.2rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 992px) {
+  .cp-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* KPI cards */
+.cp-kpi {
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.cp-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  margin: 0 auto 0.5rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f4f7;
+  color: #344054;
+}
+
+.cp-kpi-icon i {
+  font-size: 1.25rem;
+}
+
+.cp-kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.cp-kpi-title {
+  font-size: 0.85rem;
+  color: #667085;
+  margin-top: 0.25rem;
+}
+
+/* Plan selector pills */
+.cp-plan-selector {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cp-pill {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 120ms ease;
+}
+
+.cp-pill:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.cp-pill.is-active {
+  border-color: #b9f6ca;
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.cp-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #12b76a;
+  display: inline-block;
+}
+
+/* Recommendation card */
+.cp-reco-card {
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+  margin-bottom: 1rem;
+}
+
+.cp-reco {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cp-reco-title {
+  font-weight: 800;
+}
+
+.cp-reco-sub {
+  color: #667085;
+  margin-top: 2px;
+}
+
+/* Insight card */
+.cp-insight-card {
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+  margin-bottom: 1rem;
+}
+
+.cp-insight-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cp-insight-expl {
+  color: #475467;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cp-insight-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 992px) {
+  .cp-insight-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cp-insight-col-title {
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.cp-insight-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #475467;
+}
+
+/* Semesters list */
+.cp-semesters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cp-sem-card {
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+}
+
+/* semester header */
+.cp-sem-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.cp-sem-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cp-sem-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #344054;
+}
+
+.cp-sem-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.cp-sem-sub {
+  color: #667085;
+  font-size: 0.875rem;
+  margin-top: 2px;
+}
+
+/* courses */
+.cp-course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cp-course-row {
+  border: 1px solid #eef2f7;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cp-course-row.is-blocked {
+  border-color: #fee4e2;
+  background: #fff5f5;
+}
+
+.cp-course-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.cp-retake {
+  margin-left: 0.5rem;
+  font-weight: 800;
+  color: #b42318;
+}
+
+.cp-course-meta {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: #667085;
+}
+
+.cp-meta-label {
+  font-weight: 700;
+  color: #475467;
+}
+
+.cp-course-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* This wrapper is what we export */
+.cp-export-area {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* AI section placeholders */
+.cp-ai-skel {
+  padding: 0.25rem 0.25rem;
+}
+
+.cp-ai-empty {
+  color: #667085;
+  font-size: 0.95rem;
+}
