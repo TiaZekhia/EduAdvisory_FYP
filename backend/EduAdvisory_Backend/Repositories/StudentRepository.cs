@@ -572,8 +572,8 @@ namespace EduAdvisory_Backend.Repositories
                         AdvisorId = a.AdvisorId,
                         Name = a.Name,
                         Email = a.Email,
-                        Office = "Building A, Room 305",
-                        OfficeHours = "Mon, Wed, Fri: 2-4 PM"
+                        Office = a.Office,
+                        OfficeHours = a.OfficeHours
                     })
                 .FirstOrDefault();
 

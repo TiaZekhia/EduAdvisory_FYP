@@ -4,6 +4,8 @@ import { Skeleton } from "primereact/skeleton";
 
 import { useStudentSummary } from "../context/StudentSummaryProvider";
 import { studentMessagesApi } from "../../../services/students/studentMessagesApi";
+import "./MessagesPage.css";
+import { PageHero } from "../../../shared/components/PageHero";
 
 export default function MessagesPage() {
   const { summary } = useStudentSummary();
@@ -34,11 +36,13 @@ export default function MessagesPage() {
       .then(([summaryRes, messagesRes, advisorRes]) => {
         if (!mounted) return;
 
-        setStats(summaryRes?.data ?? {
-          totalMessages: 0,
-          recent7Days: 0,
-          thisMonth: 0,
-        });
+        setStats(
+          summaryRes?.data ?? {
+            totalMessages: 0,
+            recent7Days: 0,
+            thisMonth: 0,
+          }
+        );
 
         setMessages(messagesRes?.data ?? []);
         setAdvisor(advisorRes?.data ?? null);
@@ -60,18 +64,24 @@ export default function MessagesPage() {
 
   if (loading) {
     return (
-      <div className="container-fluid p-4">
-        <Skeleton width="12rem" height="2rem" className="mb-2" />
-        <Skeleton width="28rem" className="mb-4" />
-
-        <div className="row g-3 mb-4">
-          <div className="col-12 col-md-4"><Skeleton height="8rem" /></div>
-          <div className="col-12 col-md-4"><Skeleton height="8rem" /></div>
-          <div className="col-12 col-md-4"><Skeleton height="8rem" /></div>
+      <div className="messages-page container-fluid p-4 p-lg-5">
+        <div className="mb-4">
+          <Skeleton width="14rem" height="2.2rem" className="mb-2" />
+          <Skeleton width="24rem" height="1.2rem" />
         </div>
-
-        <Skeleton height="20rem" className="mb-4" />
-        <Skeleton height="12rem" />
+        <div className="row g-4 mb-4">
+          <div className="col-12 col-md-4">
+            <Skeleton height="9rem" borderRadius="20px" />
+          </div>
+          <div className="col-12 col-md-4">
+            <Skeleton height="9rem" borderRadius="20px" />
+          </div>
+          <div className="col-12 col-md-4">
+            <Skeleton height="9rem" borderRadius="20px" />
+          </div>
+        </div>
+        <Skeleton height="24rem" className="mb-4" borderRadius="24px" />
+        <Skeleton height="14rem" borderRadius="24px" />
       </div>
     );
   }
@@ -79,21 +89,14 @@ export default function MessagesPage() {
   if (err) return <div className="p-4 text-danger">{String(err)}</div>;
 
   return (
-    <div className="container-fluid p-4">
-      <div className="mb-3">
-        <h2 className="m-0">Messages</h2>
-        <div className="text-muted">
-          {summary?.programCode ?? "-"} • Semester {summary?.currentSemester ?? "-"}
-        </div>
-      </div>
+    <div className="messages-page container-fluid p-3 p-md-4">
+      <PageHero
+              title="Messages"
+              badge={`${summary?.programCode} • Semester ${summary?.currentSemester}`}
+              subtitle="Important announcements and updates from your academic advisor"
+      />
 
-      <h3 className="mt-3">Messages from Advisor</h3>
-      <div className="text-muted mb-4">
-        Important announcements and updates from your academic advisor
-      </div>
-
-      {/* Top stats */}
-      <div className="row g-3 mb-4">
+      <div className="row g-4 mb-4">
         <StatCard
           title="Total Messages"
           value={stats.totalMessages}
@@ -102,47 +105,71 @@ export default function MessagesPage() {
         <StatCard
           title="Recent (7 days)"
           value={stats.recent7Days}
+          icon="pi pi-clock"
         />
         <StatCard
           title="This Month"
           value={stats.thisMonth}
+          icon="pi pi-calendar"
         />
       </div>
 
-      {/* All messages */}
-      <Card className="shadow-sm border-0 mb-4">
-        <div className="fw-semibold fs-5">All Messages</div>
-        <div className="text-muted mb-4">
-          Broadcast messages and announcements from your advisor
+      <Card className="messages-card shadow-sm border-0 mb-4">
+        <div className="messages-card-header">
+          <div>
+            <div className="fw-semibold fs-4">All Messages</div>
+            <div className="text-muted mt-1">
+              Broadcast messages and announcements from your advisor
+            </div>
+          </div>
         </div>
 
-        {messages.length === 0 ? (
-          <div className="text-muted">No messages available.</div>
-        ) : (
-          <div className="d-flex flex-column gap-4">
-            {messages.map((msg) => (
-              <MessageCard key={msg.announcementId} message={msg} />
-            ))}
+        {messages.length === 0 && (
+          <div className="empty-state mb-4">
+            <div className="empty-icon">
+              <i className="pi pi-inbox" />
+            </div>
+            <div>
+              <div className="empty-title">No messages yet</div>
+            </div>
           </div>
         )}
+
+        <div className="d-flex flex-column gap-4">
+          {messages.map((msg) => (
+            <MessageCard key={msg.announcementId} message={msg} />
+          ))}
+        </div>
       </Card>
 
-      {/* Need help */}
-      <Card className="shadow-sm border-0">
-        <div className="fw-semibold fs-5">Need Help?</div>
+      <Card className="messages-card shadow-sm border-0">
+        <div className="fw-semibold fs-4">Need Help?</div>
         <div className="text-muted mb-3">
           Contact your advisor for questions or concerns
         </div>
 
-        <div className="mb-3">
-          If you have questions about any announcement or need clarification, you can contact your advisor:
+        <div className="help-text mb-3">
+          If you have questions about any announcement or need clarification,
+          you can contact your advisor:
         </div>
 
-        <div className="rounded-3 p-4" style={{ background: "#f3f4f6" }}>
-          <div className="fw-semibold">{advisor?.name ?? "Not assigned"}</div>
-          <div className="mt-2">Email: {advisor?.email ?? "-"}</div>
-          <div className="mt-2">Office: {advisor?.office ?? "Building A, Room 305"}</div>
-          <div className="mt-2">Office Hours: {advisor?.officeHours ?? "Mon, Wed, Fri: 2-4 PM"}</div>
+        <div className="advisor-box">
+          <div className="advisor-name">{advisor?.name ?? "Not assigned"}</div>
+          <div className="advisor-item">
+            <i className="pi pi-envelope me-2" />
+             <span> Email: </span>
+            {advisor?.email ?? "-"}
+          </div>
+          <div className="advisor-item">
+            <i className="pi pi-building me-2" />
+            <span> Office: </span>
+            {advisor?.office ?? "Building A, Room 305"}
+          </div>
+          <div className="advisor-item">
+            <i className="pi pi-clock me-2" />
+            <span> Office Hours: </span>
+            {advisor?.officeHours ?? "Mon, Wed, Fri: 2-4 PM"}
+          </div>
         </div>
       </Card>
     </div>
@@ -152,12 +179,12 @@ export default function MessagesPage() {
 function StatCard({ title, value, icon }) {
   return (
     <div className="col-12 col-md-4">
-      <div className="border rounded-3 p-4 bg-white h-100">
-        <div className="fw-semibold d-flex align-items-center gap-2">
-          {icon ? <i className={icon} /> : null}
-          <span>{title}</span>
+      <div className="stat-card h-100">
+        <div className="stat-card-top">
+          <div className="stat-icon">{icon ? <i className={icon} /> : null}</div>
+          <div className="stat-title">{title}</div>
         </div>
-        <div className="fs-1 fw-semibold mt-4">{value}</div>
+        <div className="stat-value">{value}</div>
       </div>
     </div>
   );
@@ -165,31 +192,29 @@ function StatCard({ title, value, icon }) {
 
 function MessageCard({ message }) {
   return (
-    <div className="border rounded-4 p-4 bg-white">
+    <div className={`message-card ${message.isStatic ? "message-card-demo" : ""}`}>
+      {message.isStatic && <div className="demo-badge">Preview Message</div>}
+
       <div className="fw-semibold fs-4">{message.title}</div>
 
-      <div className="text-muted mt-2 d-flex flex-wrap gap-3">
-        <span className="d-flex align-items-center gap-2">
+      <div className="message-meta mt-3">
+        <span className="message-meta-item">
           <i className="pi pi-calendar" />
           {formatDate(message.createdAt)}
         </span>
-        <span className="d-flex align-items-center gap-2">
-          <i className="pi pi-envelope" />
+        <span className="message-meta-item">
+          <i className="pi pi-user" />
           From: {message.advisorName}
         </span>
       </div>
 
-      <div
-        className="rounded-3 p-3 mt-4"
-        style={{ background: "#f3f4f6", whiteSpace: "pre-wrap" }}
-      >
-        {message.content}
-      </div>
+      <div className="message-content mt-4">{message.content}</div>
 
       <hr className="my-4" />
 
       <div className="text-muted small">
-        This message was sent to {message.recipientsCount} students in your advising group
+        This message was sent to {message.recipientsCount} students in your
+        advising group
       </div>
     </div>
   );
