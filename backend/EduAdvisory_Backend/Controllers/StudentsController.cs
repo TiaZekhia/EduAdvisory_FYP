@@ -199,5 +199,44 @@ namespace EduAdvisory_Backend.Controllers
 
             return Ok(_studentRepo.GetStudyGuideComparison(student.StudentId));
         }
+
+        [HttpGet("me/messages/summary")]
+        public IActionResult GetMyMessagesSummary()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null) return NotFound("Student not linked to this user.");
+
+            var summary = _studentRepo.GetStudentMessagesSummary(student.StudentId);
+            return Ok(summary);
+        }
+
+        [HttpGet("me/messages")]
+        public IActionResult GetMyMessages([FromQuery] int limit = 20)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null) return NotFound("Student not linked to this user.");
+
+            var messages = _studentRepo.GetStudentMessages(student.StudentId, limit);
+            return Ok(messages);
+        }
+
+        [HttpGet("me/messages/advisor")]
+        public IActionResult GetMyMessagesAdvisor()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null) return NotFound("Student not linked to this user.");
+
+            var advisor = _studentRepo.GetStudentMessagesAdvisor(student.StudentId);
+            return Ok(advisor);
+        }
     }
 }
