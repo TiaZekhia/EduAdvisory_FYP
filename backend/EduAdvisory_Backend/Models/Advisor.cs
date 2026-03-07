@@ -22,6 +22,14 @@ public partial class Advisor
     [StringLength(100)]
     public string Email { get; set; } = null!;
 
+    [Column("office")]
+    [StringLength(150)]
+    public string Office { get; set; }
+
+    [Column("office_hours")]
+    [StringLength(200)]
+    public string OfficeHours { get; set; }
+
     [InverseProperty("Advisor")]
     public virtual ICollection<Announcement> Announcements { get; set; } = new List<Announcement>();
 
