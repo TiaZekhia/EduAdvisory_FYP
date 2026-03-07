@@ -16,7 +16,7 @@ export default function StudentSidebarContent({ onNavigate }) {
 
   // Replace with real hook:
   // const { alertsCount } = useAlertsCount();
-  const alertsCount = { count: 6 };
+  const alertsCount = { count: 3 };
 
   return (
     <div className="d-flex flex-column h-100 p-3 w-100">
