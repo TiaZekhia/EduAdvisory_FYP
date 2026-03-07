@@ -1,4 +1,5 @@
 ﻿using EduAdvisory_Backend.DTOs.Course;
+using EduAdvisory_Backend.DTOs.Messages;
 using EduAdvisory_Backend.DTOs.Student;
 using EduAdvisory_Backend.Interfaces.Repositories;
 using EduAdvisory_Backend.Models;
@@ -500,6 +501,83 @@ namespace EduAdvisory_Backend.Repositories
                 .ToList();
 
             return result;
+        }
+
+        public StudentMessagesSummaryDto GetStudentMessagesSummary(int studentId)
+        {
+            var student = GetById(studentId);
+            if (student == null || student.AdvisorId == null)
+                return new StudentMessagesSummaryDto();
+
+            var advisorId = student.AdvisorId.Value;
+            var now = DateTime.Now;
+            var sevenDaysAgo = now.AddDays(-7);
+            var monthStart = new DateTime(now.Year, now.Month, 1);
+
+            var announcements = _context.Announcements
+                .Where(a => a.AdvisorId == advisorId)
+                .ToList();
+
+            return new StudentMessagesSummaryDto
+            {
+                TotalMessages = announcements.Count,
+                Recent7Days = announcements.Count(a => a.CreatedAt >= sevenDaysAgo),
+                ThisMonth = announcements.Count(a => a.CreatedAt >= monthStart)
+            };
+        }
+
+        public List<StudentMessageDto> GetStudentMessages(int studentId, int limit = 20)
+        {
+            var student = GetById(studentId);
+            if (student == null || student.AdvisorId == null)
+                return new List<StudentMessageDto>();
+
+            var advisorId = student.AdvisorId.Value;
+
+            // number of students assigned to same advisor
+            var recipientsCount = _context.SisStudents
+                .Count(s => s.AdvisorId == advisorId);
+
+            var messages = _context.Announcements
+                .Where(a => a.AdvisorId == advisorId)
+                .Join(_context.Advisors,
+                    ann => ann.AdvisorId,
+                    adv => adv.AdvisorId,
+                    (ann, adv) => new StudentMessageDto
+                    {
+                        AnnouncementId = ann.AnnouncementId,
+                        Title = ann.Title ?? "",
+                        Content = ann.Content ?? "",
+                        CreatedAt = ann.CreatedAt ?? DateTime.Now,
+                        AdvisorId = adv.AdvisorId,
+                        AdvisorName = adv.Name,
+                        RecipientsCount = recipientsCount
+                    })
+                .OrderByDescending(x => x.CreatedAt)
+                .Take(limit)
+                .ToList();
+
+            return messages;
+        }
+
+        public StudentMessagesAdvisorDto? GetStudentMessagesAdvisor(int studentId)
+        {
+            var advisor = _context.SisStudents
+                .Where(s => s.StudentId == studentId)
+                .Join(_context.Advisors,
+                    s => s.AdvisorId,
+                    a => a.AdvisorId,
+                    (s, a) => new StudentMessagesAdvisorDto
+                    {
+                        AdvisorId = a.AdvisorId,
+                        Name = a.Name,
+                        Email = a.Email,
+                        Office = a.Office,
+                        OfficeHours = a.OfficeHours
+                    })
+                .FirstOrDefault();
+
+            return advisor;
         }
 
     }
