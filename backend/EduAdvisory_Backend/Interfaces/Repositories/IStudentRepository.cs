@@ -1,4 +1,5 @@
 ﻿using EduAdvisory_Backend.DTOs.Course;
+using EduAdvisory_Backend.DTOs.Messages;
 using EduAdvisory_Backend.DTOs.Student;
 using EduAdvisory_Backend.Models;
 
@@ -29,5 +30,8 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         Dictionary<string, (string name, int credits)> GetCoursesMeta(List<string> courseCodes);
 
         Dictionary<string, List<string>> GetPrerequisitesMap(List<string> courseCodes); // course -> prereqs
+        StudentMessagesSummaryDto GetStudentMessagesSummary(int studentId);
+        List<StudentMessageDto> GetStudentMessages(int studentId, int limit = 20);
+        StudentMessagesAdvisorDto? GetStudentMessagesAdvisor(int studentId);
     }
 }

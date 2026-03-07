@@ -20,7 +20,7 @@ INSERT INTO advisor (advisor_id, name, email) VALUES
 
 
 -- =====================================================
--- 2. COURSES (FROM STUDY GUIDE – CORE CCE)
+-- 2. COURSES (FROM STUDY GUIDE â€“ CORE CCE)
 -- =====================================================
 INSERT INTO sis_course (course_code, course_name, credits) VALUES
 -- Semester 1
@@ -575,7 +575,7 @@ JOIN study_guide sg
  AND sg.recommended_semester = s.current_semester;
 
 -- =====================================================
--- 9. COURSE ASSESSMENT (ATTENDANCE – DUMMY SIS)
+-- 9. COURSE ASSESSMENT (ATTENDANCE â€“ DUMMY SIS)
 -- =====================================================
 INSERT INTO sis_course_assessment
 (student_id, course_code, course_credits,
@@ -607,6 +607,46 @@ FROM sis_current_enrollment e
 JOIN course_grading_schema g
   ON g.course_code = e.course_code;
 
+-- =====================================================
+-- 11. MEETINGS (DUMMY DATA)
+-- =====================================================
+
+-- For first 10 students: create 1 upcoming + 2 past meetings each
+INSERT INTO meeting (advisor_id, student_id, meeting_date, meeting_type, notes)
+SELECT
+  s.advisor_id,
+  s.student_id,
+  NOW() + (INTERVAL '1 day' * (1 + (ROW_NUMBER() OVER (ORDER BY s.student_id) % 7))) + INTERVAL '11 hours',
+  'MID_SEMESTER',
+  'Reminder: Please prepare any questions and bring your updated course schedule.'
+FROM sis_student s
+WHERE s.advisor_id IS NOT NULL
+ORDER BY s.student_id
+LIMIT 10;
+
+INSERT INTO meeting (advisor_id, student_id, meeting_date, meeting_type, notes)
+SELECT
+  s.advisor_id,
+  s.student_id,
+  NOW() - (INTERVAL '7 days' + (INTERVAL '1 day' * (ROW_NUMBER() OVER (ORDER BY s.student_id) % 5))) + INTERVAL '10 hours',
+  'COURSE_SELECTION',
+  'Discussed course load for next semester. Student needs to retake MATH102.'
+FROM sis_student s
+WHERE s.advisor_id IS NOT NULL
+ORDER BY s.student_id
+LIMIT 10;
+
+INSERT INTO meeting (advisor_id, student_id, meeting_date, meeting_type, notes)
+SELECT
+  s.advisor_id,
+  s.student_id,
+  NOW() - (INTERVAL '30 days' + (INTERVAL '1 day' * (ROW_NUMBER() OVER (ORDER BY s.student_id) % 10))) + INTERVAL '9 hours',
+  'PROGRESS_REVIEW',
+  'Reviewed GPA trend and attendance. Recommended weekly revision plan and office hours follow-up.'
+FROM sis_student s
+WHERE s.advisor_id IS NOT NULL
+ORDER BY s.student_id
+LIMIT 10;
 
 -- =========================
 -- USERS
