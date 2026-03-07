@@ -557,6 +557,7 @@ namespace EduAdvisory_Backend.Repositories
                     g => g.Key,
                     g => g.Select(x => x.PrerequisiteCourseCode).Distinct().ToList()
                 );
+        }
         public StudentMessagesSummaryDto GetStudentMessagesSummary(int studentId)
         {
             var student = GetById(studentId);
