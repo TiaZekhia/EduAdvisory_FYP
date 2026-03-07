@@ -1,4 +1,5 @@
 ﻿using EduAdvisory_Backend.DTOs.Course;
+using EduAdvisory_Backend.DTOs.Messages;
 using EduAdvisory_Backend.DTOs.Student;
 using EduAdvisory_Backend.Models;
 
@@ -22,5 +23,9 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         List<DepartmentCreditsDto> GetProgressDepartments(int studentId);
         List<SemesterHistoryDto> GetProgressHistory(int studentId);
         List<StudyGuideComparisonDto> GetStudyGuideComparison(int studentId);
+
+        StudentMessagesSummaryDto GetStudentMessagesSummary(int studentId);
+        List<StudentMessageDto> GetStudentMessages(int studentId, int limit = 20);
+        StudentMessagesAdvisorDto? GetStudentMessagesAdvisor(int studentId);
     }
 }
