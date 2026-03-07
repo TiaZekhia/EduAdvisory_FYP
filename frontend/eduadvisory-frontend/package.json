@@ -9,6 +9,8 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.13.5",
     "bootstrap": "^5.3.8",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.0",
     "keycloak-js": "^26.2.3",
     "primeicons": "^7.0.0",
     "primereact": "^10.9.7",

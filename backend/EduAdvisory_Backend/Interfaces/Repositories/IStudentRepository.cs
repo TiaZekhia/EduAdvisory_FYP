@@ -1,4 +1,5 @@
 ﻿using EduAdvisory_Backend.DTOs.Course;
+using EduAdvisory_Backend.DTOs.Messages;
 using EduAdvisory_Backend.DTOs.Meetings;
 using EduAdvisory_Backend.DTOs.Student;
 using EduAdvisory_Backend.Models;
@@ -26,7 +27,16 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         List<SemesterHistoryDto> GetProgressHistory(int studentId);
         List<StudyGuideComparisonDto> GetStudyGuideComparison(int studentId);
 
-        // meetings page
+        List<string> GetPassedCourses(int studentId);
+        List<string> GetFailedNotRetakenCourses(int studentId);
+        Dictionary<string, int> GetStudyGuideRecommendedSemester(string programCode); // courseCode -> recommendedSemester
+        Dictionary<string, (string name, int credits)> GetCoursesMeta(List<string> courseCodes);
+
+        Dictionary<string, List<string>> GetPrerequisitesMap(List<string> courseCodes); // course -> prereqs
+        StudentMessagesSummaryDto GetStudentMessagesSummary(int studentId);
+        List<StudentMessageDto> GetStudentMessages(int studentId, int limit = 20);
+        StudentMessagesAdvisorDto? GetStudentMessagesAdvisor(int studentId);
+
         StudentMeetingsSummaryDto GetStudentMeetingsSummary(int studentId);
         List<StudentMeetingDto> GetUpcomingMeetings(int studentId, int limit = 3);
         List<StudentMeetingDto> GetPastMeetings(int studentId, int limit = 10);

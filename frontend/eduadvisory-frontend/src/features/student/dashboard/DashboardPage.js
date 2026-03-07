@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Loading } from "../../../shared/components/Loading";
 import {PageHero} from "../../../shared/components/PageHero";
 import "./DashboardPage.css";
+import { Skeleton } from "primereact/skeleton";
 
 export default function DashboardPage() {
   const { alerts, loading: alertsLoading } = useAlerts(3);
@@ -33,7 +34,17 @@ export default function DashboardPage() {
   } = useStudentDashboardStats();
 
   if (summaryLoading || coursesLoading || statsLoading || alertsLoading) {
-    return <Loading text="Loading dashboard..." />;
+    return (
+      <div className="cp-page">
+        <div className="cp-container">
+          <Skeleton width="14rem" height="2rem" className="mb-3" />
+          <Skeleton width="26rem" height="1.25rem" className="mb-4" />
+          <Skeleton height="8rem" className="mb-3" />
+          <Skeleton height="8rem" className="mb-3" />
+          <Skeleton height="18rem" className="mb-3" />
+        </div>
+      </div>
+    );
   }
 
   if (!summary) return <div className="p-4 text-danger">No student data.</div>;
