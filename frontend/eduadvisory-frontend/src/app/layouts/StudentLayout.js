@@ -12,7 +12,7 @@ export default function StudentLayout() {
   const { summary } = useStudentSummary();
 
   const notificationsCount = 3;
-  const alertsCount = 6;
+  const alertsCount = 3;
 
   return (
     <div className={`student-shell ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
