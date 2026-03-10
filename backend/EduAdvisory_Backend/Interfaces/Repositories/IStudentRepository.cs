@@ -35,7 +35,6 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         Dictionary<string, List<string>> GetPrerequisitesMap(List<string> courseCodes); // course -> prereqs
         StudentMessagesSummaryDto GetStudentMessagesSummary(int studentId);
         List<StudentMessageDto> GetStudentMessages(int studentId, int limit = 20);
-        StudentMessagesAdvisorDto? GetStudentMessagesAdvisor(int studentId);
 
         StudentMeetingsSummaryDto GetStudentMeetingsSummary(int studentId);
         List<StudentMeetingDto> GetUpcomingMeetings(int studentId, int limit = 3);

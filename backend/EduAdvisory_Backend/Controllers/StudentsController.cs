@@ -321,21 +321,6 @@ namespace EduAdvisory_Backend.Controllers
             return Ok(messages);
         }
 
-        [HttpGet("me/messages/advisor")]
-        public IActionResult GetMyMessagesAdvisor()
-        {
-            var username = User.Identity?.Name;
-            if (string.IsNullOrEmpty(username))
-                return Unauthorized();
-
-            var student = _studentRepo.GetByUsername(username);
-            if (student == null)
-                return NotFound("Student not linked to this user.");
-
-            var advisor = _studentRepo.GetStudentMessagesAdvisor(student.StudentId);
-            return Ok(advisor);
-        }
-
         [HttpGet("me/meetings/summary")]
         public IActionResult GetMyMeetingsSummary()
         {
