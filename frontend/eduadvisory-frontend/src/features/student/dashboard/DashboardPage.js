@@ -1,17 +1,17 @@
 import StatCard from "./components/StatCard";
 import CourseCard from "./components/CourseCard";
-import { Card } from "primereact/card";
 import { useStudentSummary } from "../context/StudentSummaryProvider";
-import { ProgressBar } from "primereact/progressbar";
 import { useStudentDashboardCourses } from "./hooks/useStudentDashboardCourses";
 import { useStudentDashboardStats } from "./hooks/useStudentDashboardStats";
 import AlertsBanner from "./components/AlertsBanner";
 import { useAlerts } from "../alerts/hooks/useAlerts";
 import { useNavigate } from "react-router-dom";
-import { Loading } from "../../../shared/components/Loading";
-import {PageHero} from "../../../shared/components/PageHero";
+import { PageHero } from "../../../shared/components/PageHero";
 import "./DashboardPage.css";
 import { Skeleton } from "primereact/skeleton";
+import QuickActionCard from "./components/QuickActionCard";
+import SectionHeader from "./components/SectionHeader";
+import ProgressSummaryCard from "./components/ProgressSummaryCard.js";
 
 export default function DashboardPage() {
   const { alerts, loading: alertsLoading } = useAlerts(3);
@@ -152,57 +152,23 @@ export default function DashboardPage() {
 
       {/* Degree progress */}
       <div className="mt-4">
-        <div className="card shadow-sm border-0">
-          <div className="card-body">
-            <h5 className="card-title mb-1">Degree Progress</h5>
-            <div className="text-muted small mb-3">
-              Track your progress towards graduation
-            </div>
-
-            <div className="d-flex justify-content-between mb-2">
-              <div className="text-muted small">Credits Completed</div>
-              <div className="text-muted small">
-                {degreeProgress?.creditsEarned ?? 0} /{" "}
-                {degreeProgress?.creditsRequired ?? 0}
-              </div>
-            </div>
-
-            <ProgressBar value={degreeProgress?.percentComplete ?? 0} showValue={false} className="deg-progressbar" />
-
-            <div className="row text-center mt-3">
-              <div className="col">
-                <div className="fs-4 fw-semibold text-success">
-                  {stats?.completedCourses ?? 0}
-                </div>
-                <div className="text-muted small">Passed</div>
-              </div>
-              <div className="col">
-                <div className="fs-4 fw-semibold text-primary">
-                  {performance.length}
-                </div>
-                <div className="text-muted small">In Progress</div>
-              </div>
-              <div className="col">
-                <div className="fs-4 fw-semibold text-danger">
-                  {stats?.failedCourses ?? 0}
-                </div>
-                <div className="text-muted small">Failed</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  <ProgressSummaryCard
+    title="Degree Progress"
+    subtitle="Track your progress towards graduation"
+    current={degreeProgress?.creditsEarned ?? 0}
+    total={degreeProgress?.creditsRequired ?? 0}
+    percent={degreeProgress?.percentComplete ?? 0}
+    stats={{
+      passed: stats?.completedCourses ?? 0,
+      inProgress: performance.length,
+      failed: stats?.failedCourses ?? 0,
+    }}
+  />
+</div>
 
       {/* Current courses */}
       <div className="mt-4">
-        <div className="section-head">
-          <div>
-            <h4 className="m-0">Current Semester Courses</h4>
-            <div className="text-muted small">
-              Your enrolled courses and performance
-            </div>
-          </div>
-        </div>
+        <SectionHeader title={"Current Semester Courses"} subtitle={"Your enrolled courses and performance"}/>
 
         <div className="d-flex flex-column gap-3 mt-3">
           {performance.map((c) => (
@@ -218,11 +184,13 @@ export default function DashboardPage() {
         <div className="row g-3">
           {quickActions.map((a) => (
             <div key={a.key} className="col-12 col-md-4">
-              <Card className="quick-card" onClick={() => navigate(a.to)}>
-                <i className={`${a.icon} quick-card-icon ${a.iconClassName}`} />
-                <div className="quick-card-title">{a.title}</div>
-                <div className="quick-card-subtitle">{a.subtitle}</div>
-              </Card>
+              <QuickActionCard
+                title={a.title}
+                subtitle={a.subtitle}
+                icon={a.icon}
+                iconClassName={a.iconClassName}
+                onClick={() => navigate(a.to)}
+              />
             </div>
           ))}
         </div>

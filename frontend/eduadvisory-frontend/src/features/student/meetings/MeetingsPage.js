@@ -36,15 +36,15 @@ export default function MeetingsPage() {
     ])
       .then(([summaryRes, upcomingRes, pastRes, advisorRes]) => {
         setCounts(
-          summaryRes.data || {
+          summaryRes?.data || {
             upcomingMeetings: 0,
             pastMeetings: 0,
             totalMeetings: 0,
           }
         );
-        setUpcoming(upcomingRes.data || []);
-        setPast(pastRes.data || []);
-        setAdvisor(advisorRes.data || null);
+        setUpcoming(upcomingRes?.data || []);
+        setPast(pastRes?.data || []);
+        setAdvisor(advisorRes?.data || null);
       })
       .catch((e) => {
         console.error(e);
