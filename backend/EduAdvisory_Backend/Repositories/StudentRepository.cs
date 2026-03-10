@@ -615,26 +615,6 @@ namespace EduAdvisory_Backend.Repositories
             return messages;
         }
 
-        public StudentMessagesAdvisorDto? GetStudentMessagesAdvisor(int studentId)
-        {
-            var advisor = _context.SisStudents
-                .Where(s => s.StudentId == studentId)
-                .Join(_context.Advisors,
-                    s => s.AdvisorId,
-                    a => a.AdvisorId,
-                    (s, a) => new StudentMessagesAdvisorDto
-                    {
-                        AdvisorId = a.AdvisorId,
-                        Name = a.Name,
-                        Email = a.Email,
-                        Office = a.Office,
-                        OfficeHours = a.OfficeHours
-                    })
-                .FirstOrDefault();
-
-            return advisor;
-        }
-
         public StudentMeetingsSummaryDto GetStudentMeetingsSummary(int studentId)
         {
             var now = DateTimeOffset.UtcNow;
@@ -713,9 +693,8 @@ namespace EduAdvisory_Backend.Repositories
                         AdvisorId = a.AdvisorId,
                         Name = a.Name,
                         Email = a.Email,
-
-                        // Not in schema => UI placeholders
-                        OfficeHours = "Mon, Wed, Fri: 2-4 PM",
+                        Office =a.Office,
+                        OfficeHours = a.OfficeHours,
                         Availability = "Available"
                     })
                 .FirstOrDefault();
