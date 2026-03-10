@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using EduAdvisory_Backend.DTOs.Course;
 using EduAdvisory_Backend.Interfaces.Services;
 using EduAdvisory_Backend.DTOs.CoursePlan;
+using EduAdvisory_Backend.DTOs.Meetings;
 
 namespace EduAdvisory_Backend.Controllers
 {
@@ -320,8 +321,8 @@ namespace EduAdvisory_Backend.Controllers
             return Ok(messages);
         }
 
-        [HttpGet("me/messages/advisor")]
-        public IActionResult GetMyMessagesAdvisor()
+        [HttpGet("me/meetings/summary")]
+        public IActionResult GetMyMeetingsSummary()
         {
             var username = User.Identity?.Name;
             if (string.IsNullOrEmpty(username))
@@ -331,7 +332,52 @@ namespace EduAdvisory_Backend.Controllers
             if (student == null)
                 return NotFound("Student not linked to this user.");
 
-            var advisor = _studentRepo.GetStudentMessagesAdvisor(student.StudentId);
+            var summary = _studentRepo.GetStudentMeetingsSummary(student.StudentId);
+            return Ok(summary);
+        }
+
+        [HttpGet("me/meetings/upcoming")]
+        public IActionResult GetMyUpcomingMeetings([FromQuery] int limit = 3)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null)
+                return NotFound("Student not linked to this user.");
+
+            var data = _studentRepo.GetUpcomingMeetings(student.StudentId, limit);
+            return Ok(data);
+        }
+
+        [HttpGet("me/meetings/past")]
+        public IActionResult GetMyPastMeetings([FromQuery] int limit = 10)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null)
+                return NotFound("Student not linked to this user.");
+
+            var data = _studentRepo.GetPastMeetings(student.StudentId, limit);
+            return Ok(data);
+        }
+
+        [HttpGet("me/advisor")]
+        public IActionResult GetMyAdvisor()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null)
+                return NotFound("Student not linked to this user.");
+
+            var advisor = _studentRepo.GetStudentAdvisor(student.StudentId);
             return Ok(advisor);
         }
     }
