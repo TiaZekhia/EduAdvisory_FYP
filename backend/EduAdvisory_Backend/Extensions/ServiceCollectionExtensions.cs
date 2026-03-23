@@ -20,6 +20,7 @@ namespace EduAdvisory_Backend.Extensions
             services.AddScoped<IStudentRepository, StudentRepository>();
             services.AddScoped<IStudyGuideRepository, StudyGuideRepository>();
             services.AddScoped<ICoursePrerequisiteRepository, CoursePrerequisiteRepository>();
+            services.AddScoped<IAdvisorRepository, AdvisorRepository>();
 
             return services;
         }

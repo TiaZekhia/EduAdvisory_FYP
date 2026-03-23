@@ -4,10 +4,9 @@ import keycloak from "../../keycloak";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const value = useMemo(() => {
-    const roles =
-      keycloak.tokenParsed?.realm_access?.roles ?? [];
+  const roles = keycloak.tokenParsed?.realm_access?.roles ?? [];
 
+  const value = useMemo(() => {
     return {
       keycloak,
       isAuthenticated: !!keycloak.authenticated,
@@ -15,7 +14,7 @@ export function AuthProvider({ children }) {
       roles,
       hasRole: (role) => roles.includes(role),
     };
-  }, []);
+  }, [roles]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
