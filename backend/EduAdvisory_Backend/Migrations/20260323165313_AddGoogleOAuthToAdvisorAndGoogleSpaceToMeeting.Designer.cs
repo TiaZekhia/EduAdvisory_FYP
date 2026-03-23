@@ -3,6 +3,7 @@ using System;
 using EduAdvisory_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EduAdvisory_Backend.Migrations
 {
     [DbContext(typeof(EduAdvisoryDbContext))]
-    partial class EduAdvisoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260323165313_AddGoogleOAuthToAdvisorAndGoogleSpaceToMeeting")]
+    partial class AddGoogleOAuthToAdvisorAndGoogleSpaceToMeeting
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -155,45 +158,6 @@ namespace EduAdvisory_Backend.Migrations
                     b.HasIndex("AdvisorId");
 
                     b.ToTable("announcement");
-                });
-
-            modelBuilder.Entity("EduAdvisory_Backend.Models.AppGoogleAccount", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AccessToken")
-                        .HasColumnType("text")
-                        .HasColumnName("access_token");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("GoogleEmail")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
-                        .HasColumnName("google_email");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("text")
-                        .HasColumnName("refresh_token");
-
-                    b.Property<DateTimeOffset?>("TokenExpiryUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("token_expiry_utc");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("app_google_account");
                 });
 
             modelBuilder.Entity("EduAdvisory_Backend.Models.ChatbotHistory", b =>
