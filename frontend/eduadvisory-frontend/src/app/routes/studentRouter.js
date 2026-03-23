@@ -1,15 +1,15 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import ProtectedRoute from "../shared/components/ProtectedRoute";
-import { StudentSummaryProvider } from "../features/student/context/StudentSummaryProvider";
-import StudentLayout from "./layouts/StudentLayout";
-import DashboardPage from "../features/student/dashboard/DashboardPage";
-import MyProgressPage from "../features/student/progress/MyProgressPage";
-import CoursePlanPage from "../features/student/coursePlan/CoursePlanPage";
-import AlertsPage from "../features/student/alerts/AlertsPage";
-import MeetingsPage from "../features/student/meetings/MeetingsPage";
-import MessagesPage from "../features/student/messages/MessagesPage";
-import AIAssistantPage from "../features/student/ai/AIAssistantPage";
-import NotFoundPage from "../shared/pages/NotFoundPage";
+import ProtectedRoute from "../../shared/components/ProtectedRoute";
+import { StudentSummaryProvider } from "../../features/student/context/StudentSummaryProvider";
+import StudentLayout from "../layouts/StudentLayout";
+import DashboardPage from "../../features/student/dashboard/DashboardPage";
+import MyProgressPage from "../../features/student/progress/MyProgressPage";
+import CoursePlanPage from "../../features/student/coursePlan/CoursePlanPage";
+import AlertsPage from "../../features/student/alerts/AlertsPage";
+import MeetingsPage from "../../features/student/meetings/MeetingsPage";
+import MessagesPage from "../../features/student/messages/MessagesPage";
+import AIAssistantPage from "../../features/student/ai/AIAssistantPage";
+import NotFoundPage from "../../shared/pages/NotFoundPage";
 export const router = createBrowserRouter([
   {
     path: "/",
