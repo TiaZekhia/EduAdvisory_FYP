@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "primereact/card";
 import { Tag } from "primereact/tag";
 import { Skeleton } from "primereact/skeleton";
 import { Divider } from "primereact/divider";
+import { Dialog } from "primereact/dialog";
+import { Button } from "primereact/button";
+import { InputTextarea } from "primereact/inputtextarea";
+import { Message } from "primereact/message";
 
 import { useStudentSummary } from "../context/StudentSummaryProvider";
 import { studentMeetingsApi } from "../../../services/students/studentMeetingsApi";
@@ -15,72 +19,102 @@ export default function MeetingsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const [counts, setCounts] = useState({
-    upcomingMeetings: 0,
-    pastMeetings: 0,
-    totalMeetings: 0,
-  });
-  const [upcoming, setUpcoming] = useState([]);
-  const [past, setPast] = useState([]);
   const [advisor, setAdvisor] = useState(null);
+  const [upcoming, setUpcoming] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [availability, setAvailability] = useState([]);
 
-  useEffect(() => {
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [reason, setReason] = useState("");
+  const [savingRequest, setSavingRequest] = useState(false);
+  const [actionMsg, setActionMsg] = useState("");
+
+  const loadData = async () => {
     setLoading(true);
     setErr("");
+    try {
+      const [
+        advisorRes,
+        upcomingRes,
+        historyRes,
+        requestsRes,
+        availabilityRes,
+      ] = await Promise.all([
+        studentMeetingsApi.getAdvisor(),
+        studentMeetingsApi.getUpcoming(),
+        studentMeetingsApi.getHistory(),
+        studentMeetingsApi.getRequests(),
+        studentMeetingsApi.getAdvisorAvailability(),
+      ]);
 
-    Promise.all([
-      studentMeetingsApi.getSummary(),
-      studentMeetingsApi.getUpcoming(3),
-      studentMeetingsApi.getPast(10),
-      studentMeetingsApi.getAdvisor(),
-    ])
-      .then(([summaryRes, upcomingRes, pastRes, advisorRes]) => {
-        setCounts(
-          summaryRes?.data || {
-            upcomingMeetings: 0,
-            pastMeetings: 0,
-            totalMeetings: 0,
-          }
-        );
-        setUpcoming(upcomingRes?.data || []);
-        setPast(pastRes?.data || []);
-        setAdvisor(advisorRes?.data || null);
-      })
-      .catch((e) => {
-        console.error(e);
-        setErr(e?.response?.data ?? e?.message ?? "Failed to load meetings");
-      })
-      .finally(() => setLoading(false));
+      setAdvisor(advisorRes.data || null);
+      setUpcoming(upcomingRes.data || []);
+      setHistory(historyRes.data || []);
+      setRequests(requestsRes.data || []);
+      setAvailability(availabilityRes.data || []);
+    } catch (e) {
+      console.error(e);
+      setErr(e?.response?.data ?? e?.message ?? "Failed to load meetings page.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  const nextMeeting = useMemo(
-    () => (upcoming?.length ? upcoming[0] : null),
-    [upcoming]
-  );
+
+  const handleOpenRequest = (slot) => {
+    setSelectedSlot(slot);
+    setReason("");
+    setActionMsg("");
+    setRequestDialogOpen(true);
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!selectedSlot) return;
+
+    setSavingRequest(true);
+    setActionMsg("");
+
+    try {
+      await studentMeetingsApi.createRequest({
+        availabilityId: selectedSlot.availabilityId,
+        reason,
+      });
+
+      setActionMsg("Meeting request submitted successfully.");
+      setRequestDialogOpen(false);
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      setActionMsg(e?.response?.data ?? e?.message ?? "Failed to submit request.");
+    } finally {
+      setSavingRequest(false);
+    }
+  };
+
+  const handleCancelRequest = async (requestId) => {
+    try {
+      await studentMeetingsApi.cancelRequest(requestId);
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      setErr(e?.response?.data ?? e?.message ?? "Failed to cancel request.");
+    }
+  };
 
   if (loading) {
     return (
       <div className="meetings-page container-fluid p-4 p-lg-5">
-        <div className="mb-4">
-          <Skeleton width="14rem" height="2.2rem" className="mb-2" />
-          <Skeleton width="24rem" height="1.2rem" />
-        </div>
-
-        <div className="row g-4 mb-4">
-          <div className="col-12 col-md-4">
-            <Skeleton height="9rem" borderRadius="20px" />
-          </div>
-          <div className="col-12 col-md-4">
-            <Skeleton height="9rem" borderRadius="20px" />
-          </div>
-          <div className="col-12 col-md-4">
-            <Skeleton height="9rem" borderRadius="20px" />
-          </div>
-        </div>
-
-        <Skeleton height="20rem" className="mb-4" borderRadius="24px" />
-        <Skeleton height="22rem" className="mb-4" borderRadius="24px" />
-        <Skeleton height="14rem" borderRadius="24px" />
+        <Skeleton width="18rem" height="2rem" className="mb-3" />
+        <Skeleton height="10rem" className="mb-4" />
+        <Skeleton height="14rem" className="mb-4" />
+        <Skeleton height="16rem" className="mb-4" />
+        <Skeleton height="16rem" />
       </div>
     );
   }
@@ -91,106 +125,96 @@ export default function MeetingsPage() {
     <div className="meetings-page container-fluid p-3 p-md-4">
       <PageHero
         title="Meetings"
-        badge={`${summary?.programCode ?? "-"} • Semester ${
-          summary?.currentSemester ?? "-"
-        }`}
-        subtitle="View your scheduled and past meetings with your academic advisor"
+        badge={`${summary?.programCode ?? "-"} • Semester ${summary?.currentSemester ?? "-"}`}
+        subtitle="Schedule and manage your advising meetings"
       />
 
+      {actionMsg ? <Message severity="success" text={actionMsg} className="mb-4" /> : null}
+
       <div className="row g-4 mb-4">
-        <CountCard
-          title="Upcoming Meetings"
-          value={counts.upcomingMeetings}
-          icon="pi pi-calendar-plus"
-        />
-        <CountCard
-          title="Past Meetings"
-          value={counts.pastMeetings}
-          icon="pi pi-history"
-        />
-        <CountCard
-          title="Total Meetings"
-          value={counts.totalMeetings}
-          icon="pi pi-users"
-        />
+        <CountCard title="Upcoming Meetings" value={upcoming.length} icon="pi pi-calendar-plus" />
+        <CountCard title="Past Meetings" value={history.length} icon="pi pi-history" />
+        <CountCard title="Pending Requests" value={requests.filter(r => r.status === "PENDING").length} icon="pi pi-send" />
       </div>
 
-      <Card className="meetings-card shadow-sm border-0 mb-4">
-        <div className="meetings-card-header">
-          <div>
-            <div className="fw-semibold fs-4">Upcoming Meeting</div>
-            <div className="text-muted mt-1">
-              Your next scheduled session with your advisor
-            </div>
-          </div>
-        </div>
+  <Card className="meetings-card shadow-sm border-0 mb-4">
+  <div className="meetings-card-header">
+    <div>
+      <div className="fw-semibold fs-4">Upcoming Meetings</div>
+      <div className="text-muted mt-1">
+        Your confirmed upcoming sessions with your advisor
+      </div>
+    </div>
+  </div>
 
-        {nextMeeting ? (
-          <MeetingBigCard meeting={nextMeeting} />
-        ) : (
-          <div className="meetings-empty-state">
-            <div className="meetings-empty-icon">
-              <i className="pi pi-calendar" />
-            </div>
-            <div>
-              <div className="meetings-empty-title">No upcoming meetings</div>
-              <div className="meetings-empty-text">
-                You do not have any scheduled meetings right now.
-              </div>
-            </div>
-          </div>
-        )}
-      </Card>
+  {upcoming?.length ? (
+    <div className="d-flex flex-column gap-4">
+      <div>
+        <div className="meeting-section-label mb-3">Next Meeting</div>
+        <MeetingBigCard meeting={upcoming[0]} />
+      </div>
 
-      <Card className="meetings-card shadow-sm border-0 mb-4">
-        <div className="meetings-card-header">
-          <div>
-            <div className="fw-semibold fs-4">Meeting History</div>
-            <div className="text-muted mt-1">
-              Past meetings and advisor notes
-            </div>
-          </div>
-        </div>
-
-        {past?.length ? (
+      {upcoming.length > 1 ? (
+        <div>
+          <div className="meeting-section-label mb-3">Other Upcoming Meetings</div>
           <div className="d-flex flex-column gap-3">
-            {past.map((m) => (
-              <MeetingHistoryRow key={m.meetingId} meeting={m} />
+            {upcoming.slice(1).map((meeting) => (
+              <UpcomingMeetingRow key={meeting.meetingId} meeting={meeting} />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  ) : (
+    <EmptyState
+      icon="pi pi-calendar"
+      title="No upcoming meetings"
+      text="You do not have any confirmed meetings right now."
+    />
+  )}
+</Card>
+
+      <Card className="meetings-card shadow-sm border-0 mb-4">
+        <div className="meetings-card-header">
+          <div>
+            <div className="fw-semibold fs-4">Pending Requests</div>
+            <div className="text-muted mt-1">Requests waiting for advisor approval</div>
+          </div>
+        </div>
+
+        {requests?.length ? (
+          <div className="d-flex flex-column gap-3">
+            {requests.map((r) => (
+              <RequestRow key={r.requestId} request={r} onCancel={handleCancelRequest} />
             ))}
           </div>
         ) : (
-          <div className="meetings-empty-state">
-            <div className="meetings-empty-icon">
-              <i className="pi pi-clock" />
-            </div>
-            <div>
-              <div className="meetings-empty-title">No past meetings</div>
-              <div className="meetings-empty-text">
-                Your completed meetings will appear here.
-              </div>
-            </div>
-          </div>
+          <EmptyState
+            icon="pi pi-inbox"
+            title="No meeting requests"
+            text="Your submitted meeting requests will appear here."
+          />
         )}
       </Card>
 
-      <Card className="meetings-card shadow-sm border-0">
-        <div className="fw-semibold fs-4">Need to Schedule a Meeting?</div>
-        <div className="text-muted mb-3">
-          Contact your advisor to arrange an appointment
+      <Card className="meetings-card shadow-sm border-0 mb-4">
+        <div className="meetings-card-header">
+          <div>
+            <div className="fw-semibold fs-4">Request a Meeting</div>
+            <div className="text-muted mt-1">Choose an available slot from your advisor</div>
+          </div>
         </div>
 
-        <div className="meeting-advisor-box">
+        <div className="meeting-advisor-box mb-4">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
             <div>
               <div className="meeting-advisor-label">Your Academic Advisor</div>
-              <div className="meeting-advisor-name">
-                {advisor?.name ?? "Not assigned"}
-              </div>
+              <div className="meeting-advisor-name">{advisor?.name ?? "Not assigned"}</div>
             </div>
 
             <Tag
-              value={advisor?.availability ?? "Unknown"}
-              severity="success"
+              value={availability.length ? "Slots Available" : "No Slots"}
+              severity={availability.length ? "success" : "warning"}
               className="meeting-status-tag"
             />
           </div>
@@ -209,22 +233,116 @@ export default function MeetingsPage() {
             <div className="col-12 col-md-6">
               <div className="meeting-info-tile">
                 <div className="meeting-info-label">
-                  <i className="pi pi-clock" />
-                  Office Hours
+                  <i className="pi pi-building" />
+                  Office
                 </div>
-                <div className="meeting-info-value">
-                  {advisor?.officeHours ?? "Mon, Wed, Fri: 2-4 PM"}
-                </div>
+                <div className="meeting-info-value">{advisor?.office ?? "-"}</div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="meeting-advisor-note mt-3">
-            You can request a meeting through the university&apos;s advising
-            portal or by sending an email to your advisor.
+        {availability?.length ? (
+          <div className="row g-3">
+            {availability.map((slot) => (
+              <div className="col-12 col-lg-6" key={slot.availabilityId}>
+                <div className="meeting-history-row">
+                  <div className="meeting-history-title">Available Slot</div>
+                  <div className="meeting-history-meta mt-2">
+                    <span className="meeting-history-meta-item">
+                      <i className="pi pi-calendar" />
+                      {formatDateLong(slot.startAt)}
+                    </span>
+                    <span className="meeting-history-meta-item">
+                      <i className="pi pi-clock" />
+                      {formatTime(slot.startAt)} - {formatTime(slot.endAt)}
+                    </span>
+                  </div>
+
+                  <div className="mt-3">
+                    <Button
+                      label="Request This Slot"
+                      icon="pi pi-send"
+                      className="p-button-sm"
+                      onClick={() => handleOpenRequest(slot)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon="pi pi-clock"
+            title="No available slots"
+            text="Your advisor has not published any available slots yet."
+          />
+        )}
+      </Card>
+
+      <Card className="meetings-card shadow-sm border-0">
+        <div className="meetings-card-header">
+          <div>
+            <div className="fw-semibold fs-4">Meeting History</div>
+            <div className="text-muted mt-1">Past completed meetings and notes</div>
           </div>
         </div>
+
+        {history?.length ? (
+          <div className="d-flex flex-column gap-3">
+            {history.map((m) => (
+              <MeetingHistoryRow key={m.meetingId} meeting={m} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon="pi pi-history"
+            title="No past meetings"
+            text="Your completed meetings will appear here."
+          />
+        )}
       </Card>
+
+      <Dialog
+        header="Request Meeting"
+        visible={requestDialogOpen}
+        style={{ width: "35rem", maxWidth: "95vw" }}
+        onHide={() => setRequestDialogOpen(false)}
+      >
+        {selectedSlot ? (
+          <div>
+            <div className="meeting-notes-box mb-3">
+              <div><strong>Date:</strong> {formatDateLong(selectedSlot.startAt)}</div>
+              <div><strong>Time:</strong> {formatTime(selectedSlot.startAt)} - {formatTime(selectedSlot.endAt)}</div>
+            </div>
+
+            <label className="meeting-advisor-label mb-2 d-block">Reason for meeting</label>
+            <InputTextarea
+              rows={5}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Write a short reason for the meeting..."
+              className="w-100"
+            />
+
+            {actionMsg ? <div className="text-danger mt-3">{actionMsg}</div> : null}
+
+            <div className="d-flex justify-content-end gap-2 mt-4">
+              <Button
+                label="Cancel"
+                className="p-button-text"
+                onClick={() => setRequestDialogOpen(false)}
+              />
+              <Button
+                label={savingRequest ? "Submitting..." : "Submit Request"}
+                icon="pi pi-check"
+                onClick={handleSubmitRequest}
+                disabled={savingRequest}
+              />
+            </div>
+          </div>
+        ) : null}
+      </Dialog>
     </div>
   );
 }
@@ -235,7 +353,7 @@ function CountCard({ title, value, icon }) {
       <div className="meeting-stat-card h-100">
         <div className="meeting-stat-card-top">
           <div className="meeting-stat-icon">
-            {icon ? <i className={icon} /> : null}
+            <i className={icon} />
           </div>
           <div className="meeting-stat-title">{title}</div>
         </div>
@@ -245,9 +363,22 @@ function CountCard({ title, value, icon }) {
   );
 }
 
+function EmptyState({ icon, title, text }) {
+  return (
+    <div className="meetings-empty-state">
+      <div className="meetings-empty-icon">
+        <i className={icon} />
+      </div>
+      <div>
+        <div className="meetings-empty-title">{title}</div>
+        <div className="meetings-empty-text">{text}</div>
+      </div>
+    </div>
+  );
+}
+
 function MeetingBigCard({ meeting }) {
-  const when = formatDateLong(meeting.meetingDate);
-  const time = formatTime(meeting.meetingDate);
+  const hasLink = meeting.meetingLink && meeting.meetingLink.trim();
 
   return (
     <div className="meeting-feature-card">
@@ -258,23 +389,25 @@ function MeetingBigCard({ meeting }) {
           <div className="meeting-feature-meta mt-3">
             <span className="meeting-feature-meta-item">
               <i className="pi pi-calendar" />
-              {when}
+              {formatDateLong(meeting.startAt)}
             </span>
 
             <span className="meeting-feature-meta-item">
               <i className="pi pi-clock" />
-              {time} (30 minutes)
+              {formatTime(meeting.startAt)} - {formatTime(meeting.endAt)}
             </span>
 
             <span className="meeting-feature-meta-item">
               <i className="pi pi-user" />
-              Your Academic Advisor
+              {meeting.advisorName}
             </span>
 
-            <span className="meeting-feature-meta-item">
-              <i className="pi pi-envelope" />
-              {meeting.advisorEmail}
-            </span>
+            {meeting.advisorEmail ? (
+              <span className="meeting-feature-meta-item">
+                <i className="pi pi-envelope" />
+                {meeting.advisorEmail}
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -287,20 +420,35 @@ function MeetingBigCard({ meeting }) {
 
       <Divider className="meeting-divider" />
 
-      <div className="meeting-reminder-box">
-        <span className="fw-semibold">Reminder:</span>{" "}
-        {meeting.notes?.length
-          ? meeting.notes
-          : "Please prepare any questions or concerns you'd like to discuss during this meeting. Bring your current course schedule and any documents related to your academic progress."}
+      <div className="meeting-access-panel">
+        <div>
+          <div className="meeting-access-label">Meeting Access</div>
+          <div className="meeting-access-subtext">
+            Use the generated Google Meet link to join your advising session.
+          </div>
+        </div>
+
+        {hasLink ? (
+          <a
+            href={meeting.meetingLink}
+            target="_blank"
+            rel="noreferrer"
+            className="meeting-primary-link"
+          >
+            <i className="pi pi-video me-2" />
+            Join Google Meet
+          </a>
+        ) : (
+          <div className="meeting-link-pending-box">
+            Meeting link is not available yet.
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 function MeetingHistoryRow({ meeting }) {
-  const date = formatDateShort(meeting.meetingDate);
-  const time = formatTime(meeting.meetingDate);
-
   return (
     <div className="meeting-history-row">
       <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
@@ -310,11 +458,11 @@ function MeetingHistoryRow({ meeting }) {
           <div className="meeting-history-meta mt-2">
             <span className="meeting-history-meta-item">
               <i className="pi pi-calendar" />
-              {date}
+              {formatDateShort(meeting.startAt)}
             </span>
             <span className="meeting-history-meta-item">
               <i className="pi pi-clock" />
-              {time}
+              {formatTime(meeting.startAt)} - {formatTime(meeting.endAt)}
             </span>
           </div>
 
@@ -329,11 +477,106 @@ function MeetingHistoryRow({ meeting }) {
           </div>
         </div>
 
-        <Tag
-          value={meeting.status}
-          severity="success"
-          className="meeting-status-tag"
-        />
+        <Tag value={meeting.status} severity="success" className="meeting-status-tag" />
+      </div>
+    </div>
+  );
+}
+function UpcomingMeetingRow({ meeting }) {
+  const hasLink = meeting.meetingLink && meeting.meetingLink.trim();
+
+  return (
+    <div className="upcoming-meeting-row">
+      <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
+        <div className="flex-grow-1">
+          <div className="upcoming-meeting-title">{meeting.title}</div>
+
+          <div className="meeting-history-meta mt-2">
+            <span className="meeting-history-meta-item">
+              <i className="pi pi-calendar" />
+              {formatDateShort(meeting.startAt)}
+            </span>
+            <span className="meeting-history-meta-item">
+              <i className="pi pi-clock" />
+              {formatTime(meeting.startAt)} - {formatTime(meeting.endAt)}
+            </span>
+            <span className="meeting-history-meta-item">
+              <i className="pi pi-user" />
+              {meeting.advisorName}
+            </span>
+          </div>
+        </div>
+
+        <div className="d-flex flex-column align-items-end gap-2">
+          <Tag value={meeting.status} severity="info" className="meeting-status-tag" />
+          {hasLink ? (
+            <a
+              href={meeting.meetingLink}
+              target="_blank"
+              rel="noreferrer"
+              className="meeting-link-btn"
+            >
+              <i className="pi pi-video me-2" />
+              Join
+            </a>
+          ) : (
+            <span className="meeting-link-pending">Link pending</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+function RequestRow({ request, onCancel }) {
+  const severity =
+    request.status === "PENDING"
+      ? "warning"
+      : request.status === "REJECTED"
+      ? "danger"
+      : request.status === "ACCEPTED"
+      ? "success"
+      : "info";
+
+  return (
+    <div className="meeting-history-row">
+      <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
+        <div className="flex-grow-1">
+          <div className="meeting-history-title">Meeting Request</div>
+          <div className="meeting-history-meta mt-2">
+            <span className="meeting-history-meta-item">
+              <i className="pi pi-user" />
+              {request.advisorName}
+            </span>
+            <span className="meeting-history-meta-item">
+              <i className="pi pi-calendar" />
+              {formatDateShort(request.startAt)}
+            </span>
+            <span className="meeting-history-meta-item">
+              <i className="pi pi-clock" />
+              {formatTime(request.startAt)} - {formatTime(request.endAt)}
+            </span>
+          </div>
+
+          {request.reason ? (
+            <div className="meeting-notes-box mt-3">{request.reason}</div>
+          ) : null}
+
+          {request.rejectionReason ? (
+            <div className="meeting-notes-box mt-3 text-danger">{request.rejectionReason}</div>
+          ) : null}
+        </div>
+
+        <div className="d-flex flex-column gap-2 align-items-end">
+          <Tag value={request.status} severity={severity} className="meeting-status-tag" />
+          {request.status === "PENDING" ? (
+            <Button
+              label="Cancel"
+              icon="pi pi-times"
+              className="p-button-sm p-button-outlined p-button-danger"
+              onClick={() => onCancel(request.requestId)}
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   );
