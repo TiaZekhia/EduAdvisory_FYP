@@ -2,9 +2,9 @@
 {
     public class AdvisorDashboardSummaryDto
     {
-        public int TotalAdvisees { get; set; }
+        public int TotalStudents { get; set; }
+        public int OnProbation { get; set; }
+        public decimal AverageGpa { get; set; }
         public int UpcomingMeetings { get; set; }
-        public int TotalMeetings { get; set; }
-        public int TotalAnnouncements { get; set; }
     }
 }
