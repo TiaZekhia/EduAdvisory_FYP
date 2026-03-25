@@ -11,6 +11,9 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         AdvisorSummaryDto GetAdvisorSummary(int advisorId);
         AdvisorDashboardSummaryDto GetDashboardSummary(int advisorId);
 
+        List<AdvisorStudentOverviewDto> GetStudentsOverview(int advisorId);
+        List<AdvisorRecentActivityDto> GetRecentActivity(int advisorId, int limit = 10);
+
         List<AdvisorMeetingDto> GetUpcomingMeetings(int advisorId, int limit = 5);
         List<AdvisorMeetingDto> GetPastMeetings(int advisorId, int limit = 10);
 

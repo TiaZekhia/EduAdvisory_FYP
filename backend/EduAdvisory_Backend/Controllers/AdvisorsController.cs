@@ -93,5 +93,31 @@ namespace EduAdvisory_Backend.Controllers
             var data = _advisorRepo.GetMessages(advisor.AdvisorId, limit);
             return Ok(data);
         }
+
+        [HttpGet("me/students-overview")]
+        public IActionResult GetMyStudentsOverview()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var advisor = _advisorRepo.GetByUsername(username);
+            if (advisor == null) return NotFound("Advisor not linked to this user.");
+
+            var data = _advisorRepo.GetStudentsOverview(advisor.AdvisorId);
+            return Ok(data);
+        }
+
+        [HttpGet("me/recent-activity")]
+        public IActionResult GetMyRecentActivity([FromQuery] int limit = 10)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var advisor = _advisorRepo.GetByUsername(username);
+            if (advisor == null) return NotFound("Advisor not linked to this user.");
+
+            var data = _advisorRepo.GetRecentActivity(advisor.AdvisorId, limit);
+            return Ok(data);
+        }
     }
 }
