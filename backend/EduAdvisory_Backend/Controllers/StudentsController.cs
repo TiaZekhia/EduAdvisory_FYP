@@ -142,25 +142,10 @@ namespace EduAdvisory_Backend.Controllers
             if (student == null)
                 return NotFound("Student not linked to this user.");
 
-            var alerts = _studentRepo.GetStudentAlerts(student.StudentId, limit);
+            var alerts = _studentRepo.GetStudentAlerts(student.StudentId);
             return Ok(alerts);
         }
-
-        [HttpGet("me/alerts/count")]
-        public IActionResult GetMyAlertsCount()
-        {
-            var username = User.Identity?.Name;
-            if (string.IsNullOrEmpty(username))
-                return Unauthorized();
-
-            var student = _studentRepo.GetByUsername(username);
-            if (student == null)
-                return NotFound("Student not linked to this user.");
-
-            var count = _studentRepo.GetStudentAlertsCount(student.StudentId);
-            return Ok(count);
-        }
-
+       
         [HttpGet("me/progress/summary")]
         public IActionResult GetMyProgressSummary()
         {

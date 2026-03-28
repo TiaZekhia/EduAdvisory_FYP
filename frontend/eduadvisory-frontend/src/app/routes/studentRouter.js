@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "../../shared/components/ProtectedRoute";
 import { StudentSummaryProvider } from "../../features/student/context/StudentSummaryProvider";
+import { StudentAlertsProvider } from "../../features/student/context/StudentAlertsProvider";
 import StudentLayout from "../layouts/StudentLayout";
 import DashboardPage from "../../features/student/dashboard/DashboardPage";
 import MyProgressPage from "../../features/student/progress/MyProgressPage";
@@ -20,7 +21,9 @@ export const router = createBrowserRouter([
   element: (
   <ProtectedRoute allowedRoles={["STUDENT"]}>
     <StudentSummaryProvider>
-      <StudentLayout />
+      <StudentAlertsProvider>
+        <StudentLayout />
+      </StudentAlertsProvider>  
     </StudentSummaryProvider>
   </ProtectedRoute>
 ),

@@ -196,7 +196,7 @@ namespace EduAdvisory_Backend.Repositories
             return "LOW";
         }
 
-        public List<StudentAlertDto> GetStudentAlerts(int studentId, int limit = 5)
+        public StudentAlertsResponseDto GetStudentAlerts(int studentId)
         {
             var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
 
@@ -211,7 +211,7 @@ namespace EduAdvisory_Backend.Repositories
 
             var codes = currentCourses.Select(x => x.CourseCode).ToList();
 
-            // Assessments (absences)
+            // Assessments
             var assessments = _context.SisCourseAssessments
                 .Where(a => a.StudentId == studentId && codes.Contains(a.CourseCode))
                 .ToList();
@@ -223,15 +223,18 @@ namespace EduAdvisory_Backend.Repositories
 
             var alerts = new List<StudentAlertDto>();
 
+            // ------------------------
             // A) Absence alerts
+            // ------------------------
             foreach (var a in assessments)
             {
                 if (a.MaxAbsences == null || a.MaxAbsences == 0) continue;
 
                 var ratio = (double)(a.AbsencesCount ?? 0) / (double)a.MaxAbsences;
-                if (ratio < 0.5) continue; // no alert
+                if (ratio < 0.5) continue;
 
                 var sev = SeverityFrom(ratio);
+
                 alerts.Add(new StudentAlertDto
                 {
                     Severity = sev,
@@ -242,11 +245,13 @@ namespace EduAdvisory_Backend.Repositories
                 });
             }
 
-            // B) Midterm alerts (if MIDTERM exists)
+            // ------------------------
+            // B) Midterm alerts
+            // ------------------------
             foreach (var code in codes)
             {
-                var mid = grades
-                    .FirstOrDefault(g => g.CourseCode == code && g.ComponentName == "MIDTERM");
+                var mid = grades.FirstOrDefault(g =>
+                    g.CourseCode == code && g.ComponentName == "MIDTERM");
 
                 if (mid?.Grade == null) continue;
 
@@ -256,7 +261,7 @@ namespace EduAdvisory_Backend.Repositories
                     {
                         Severity = "HIGH",
                         Title = "Low midterm grade",
-                        Message = $"Your MIDTERM grade is {mid.Grade}/100. You may need immediate action.",
+                        Message = $"Your MIDTERM grade is {mid.Grade}/100.",
                         CourseCode = code,
                         CreatedAt = now
                     });
@@ -267,23 +272,24 @@ namespace EduAdvisory_Backend.Repositories
                     {
                         Severity = "MEDIUM",
                         Title = "Midterm needs improvement",
-                        Message = $"Your MIDTERM grade is {mid.Grade}/100. Consider extra study to improve.",
+                        Message = $"Your MIDTERM grade is {mid.Grade}/100.",
                         CourseCode = code,
                         CreatedAt = now
                     });
                 }
             }
 
-            // C) Analysis-based alerts (optional but valuable)
-            // If you want to keep repository clean, you can compute it in service instead.
-            // For simplicity, do minimal compute here:
-
+            // ------------------------
+            // C) Analysis alerts
+            // ------------------------
             var student = GetById(studentId);
+
             if (student != null)
             {
-                // Missing current semester guide courses
+                // Missing courses
                 var expected = _context.StudyGuides
-                    .Where(sg => sg.ProgramCode == student.ProgramCode && sg.RecommendedSemester == student.CurrentSemester)
+                    .Where(sg => sg.ProgramCode == student.ProgramCode &&
+                                 sg.RecommendedSemester == student.CurrentSemester)
                     .Select(sg => sg.CourseCode)
                     .ToList();
 
@@ -296,13 +302,12 @@ namespace EduAdvisory_Backend.Repositories
                     {
                         Severity = "MEDIUM",
                         Title = "Missing recommended courses",
-                        Message = $"You are missing {missing.Count} recommended course(s) for this semester.",
-                        CourseCode = null,
+                        Message = $"You are missing {missing.Count} recommended course(s).",
                         CreatedAt = now
                     });
                 }
 
-                // Failed but not retaken
+                // Failed not retaken
                 var history = _context.SisStudentCourseHistories
                     .Where(h => h.StudentId == studentId)
                     .ToList();
@@ -311,39 +316,37 @@ namespace EduAdvisory_Backend.Repositories
                 var failed = history.Where(h => h.Status == "FAILED").Select(h => h.CourseCode).ToHashSet();
 
                 var failedNotRetaken = failed.Where(fc => !passed.Contains(fc)).ToList();
+
                 if (failedNotRetaken.Any())
                 {
                     alerts.Add(new StudentAlertDto
                     {
                         Severity = "HIGH",
                         Title = "Failed course not retaken",
-                        Message = $"You have {failedNotRetaken.Count} failed course(s) not retaken yet.",
-                        CourseCode = null,
+                        Message = $"You have {failedNotRetaken.Count} failed course(s).",
                         CreatedAt = now
                     });
                 }
             }
 
-            // Order by severity then return top N
+            // ------------------------
             int severityRank(string s) => s == "HIGH" ? 3 : s == "MEDIUM" ? 2 : 1;
 
-            return alerts
-                .OrderByDescending(a => severityRank(a.Severity))
-                .ThenByDescending(a => a.CreatedAt)
-                .Take(limit)
+            var ordered = alerts
+                .OrderByDescending(a => a.CreatedAt)
+                .ThenByDescending(a => severityRank(a.Severity))
                 .ToList();
-        }
 
-        public StudentAlertsCountDto GetStudentAlertsCount(int studentId)
-        {
-            var alerts = GetStudentAlerts(studentId, limit: 1000);
-
-            return new StudentAlertsCountDto
+            // ------------------------
+            // FINAL RESPONSE (KEY PART)
+            // ------------------------
+            return new StudentAlertsResponseDto
             {
-                Count = alerts.Count,
-                High = alerts.Count(a => a.Severity == "HIGH"),
-                Medium = alerts.Count(a => a.Severity == "MEDIUM"),
-                Low = alerts.Count(a => a.Severity == "LOW"),
+                Count = ordered.Count,
+                High = ordered.Count(a => a.Severity == "HIGH"),
+                Medium = ordered.Count(a => a.Severity == "MEDIUM"),
+                Low = ordered.Count(a => a.Severity == "LOW"),
+                Alerts = ordered
             };
         }
 
