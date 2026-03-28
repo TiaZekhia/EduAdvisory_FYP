@@ -4,7 +4,6 @@ import { useStudentSummary } from "../context/StudentSummaryProvider";
 import { useStudentDashboardCourses } from "./hooks/useStudentDashboardCourses";
 import { useStudentDashboardStats } from "./hooks/useStudentDashboardStats";
 import AlertsBanner from "./components/AlertsBanner";
-import { useAlerts } from "../alerts/hooks/useAlerts";
 import { useNavigate } from "react-router-dom";
 import { PageHero } from "../../../shared/components/PageHero";
 import "./DashboardPage.css";
@@ -12,11 +11,12 @@ import { Skeleton } from "primereact/skeleton";
 import QuickActionCard from "./components/QuickActionCard";
 import SectionHeader from "./components/SectionHeader";
 import ProgressSummaryCard from "./components/ProgressSummaryCard.js";
+import { useStudentAlerts } from "../context/StudentAlertsProvider.js";
 
 export default function DashboardPage() {
-  const { alerts, loading: alertsLoading } = useAlerts(3);
-  const { summary, loading: summaryLoading } = useStudentSummary();
-  const navigate = useNavigate();
+const { latestAlerts, alertsLoading } = useStudentAlerts();
+const { summary, loading: summaryLoading } = useStudentSummary();
+const navigate = useNavigate();
 
   const {
     performance,
@@ -133,8 +133,8 @@ export default function DashboardPage() {
       />
 
       {/* Alerts */}
-      <AlertsBanner alerts={alerts} />
-
+      <AlertsBanner alerts={latestAlerts} />
+      
       {/* KPI cards */}
       <div className="row g-3 mt-2">
         {kpis.map((kpi) => (

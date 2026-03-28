@@ -12,11 +12,10 @@ const navItems = [
   { to: "/student/ai-assistant", label: "AI Assistant", icon: "pi pi-comments" },
 ];
 
-export default function StudentSidebarContent({ onNavigate }) {
+export default function StudentSidebarContent({ onNavigate, alertsCount }) {
 
   // Replace with real hook:
   // const { alertsCount } = useAlertsCount();
-  const alertsCount = { count: 3 };
 
   return (
     <div className="d-flex flex-column h-100 p-3 w-100">
@@ -47,7 +46,7 @@ export default function StudentSidebarContent({ onNavigate }) {
             <span>{item.label}</span>
 
             {item.label === "Alerts" && (
-              <Badge value={alertsCount.count} severity="danger" className="ms-auto" />
+              <Badge value={alertsCount} severity="danger" className="ms-auto" />
             )}
           </NavLink>
         ))}
