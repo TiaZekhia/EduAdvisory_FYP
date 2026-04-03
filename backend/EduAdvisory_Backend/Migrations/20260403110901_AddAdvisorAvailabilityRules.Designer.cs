@@ -3,6 +3,7 @@ using System;
 using EduAdvisory_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EduAdvisory_Backend.Migrations
 {
     [DbContext(typeof(EduAdvisoryDbContext))]
-    partial class EduAdvisoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403110901_AddAdvisorAvailabilityRules")]
+    partial class AddAdvisorAvailabilityRules
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -102,46 +105,6 @@ namespace EduAdvisory_Backend.Migrations
                     b.HasIndex("AdvisorId");
 
                     b.ToTable("advisor_availability");
-                });
-
-            modelBuilder.Entity("EduAdvisory_Backend.Models.AdvisorAvailabilityRule", b =>
-                {
-                    b.Property<int>("RuleId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("rule_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RuleId"));
-
-                    b.Property<int>("AdvisorId")
-                        .HasColumnType("integer")
-                        .HasColumnName("advisor_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("DayOfWeek")
-                        .HasColumnType("integer")
-                        .HasColumnName("day_of_week");
-
-                    b.Property<TimeSpan>("EndTime")
-                        .HasColumnType("interval")
-                        .HasColumnName("end_time");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<TimeSpan>("StartTime")
-                        .HasColumnType("interval")
-                        .HasColumnName("start_time");
-
-                    b.HasKey("RuleId");
-
-                    b.HasIndex("AdvisorId");
-
-                    b.ToTable("advisor_availability_rule");
                 });
 
             modelBuilder.Entity("EduAdvisory_Backend.Models.Announcement", b =>
@@ -804,9 +767,9 @@ namespace EduAdvisory_Backend.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("advisor_id");
 
-                    b.Property<DateTimeOffset>("EndAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("end_at");
+                    b.Property<int>("AvailabilityId")
+                        .HasColumnType("integer")
+                        .HasColumnName("availability_id");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(500)
@@ -826,10 +789,6 @@ namespace EduAdvisory_Backend.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("responded_at");
 
-                    b.Property<DateTimeOffset>("StartAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("start_at");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -844,23 +803,14 @@ namespace EduAdvisory_Backend.Migrations
 
                     b.HasIndex("AdvisorId");
 
+                    b.HasIndex("AvailabilityId");
+
                     b.HasIndex("StudentId");
 
                     b.ToTable("meeting_request");
                 });
 
             modelBuilder.Entity("EduAdvisory_Backend.Models.AdvisorAvailability", b =>
-                {
-                    b.HasOne("EduAdvisory_Backend.Models.Advisor", "Advisor")
-                        .WithMany()
-                        .HasForeignKey("AdvisorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Advisor");
-                });
-
-            modelBuilder.Entity("EduAdvisory_Backend.Models.AdvisorAvailabilityRule", b =>
                 {
                     b.HasOne("EduAdvisory_Backend.Models.Advisor", "Advisor")
                         .WithMany()
@@ -1093,6 +1043,12 @@ namespace EduAdvisory_Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("EduAdvisory_Backend.Models.AdvisorAvailability", "Availability")
+                        .WithMany()
+                        .HasForeignKey("AvailabilityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("EduAdvisory_Backend.Models.SisStudent", "Student")
                         .WithMany()
                         .HasForeignKey("StudentId")
@@ -1100,6 +1056,8 @@ namespace EduAdvisory_Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Advisor");
+
+                    b.Navigation("Availability");
 
                     b.Navigation("Student");
                 });

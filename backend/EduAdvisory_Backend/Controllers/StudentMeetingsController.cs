@@ -1,6 +1,7 @@
 ﻿using EduAdvisory_Backend.DTOs.Meetings;
 using EduAdvisory_Backend.DTOs.Student;
 using EduAdvisory_Backend.Models;
+using EduAdvisory_Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace EduAdvisory_Backend.Controllers
     public class StudentMeetingsController : ControllerBase
     {
         private readonly EduAdvisoryDbContext _context;
+        private static readonly int[] AllowedDurations = [15, 30, 45, 60];
 
         public StudentMeetingsController(EduAdvisoryDbContext context)
         {
@@ -54,31 +56,179 @@ namespace EduAdvisory_Backend.Controllers
             return Ok(advisor);
         }
 
-        [HttpGet("my/advisor-availability")]
-        public async Task<IActionResult> GetMyAdvisorAvailability()
+        [HttpGet("my/advisor-calendar")]
+        public async Task<IActionResult> GetMyAdvisorCalendar([FromQuery] DateOnly date)
         {
             var student = await GetCurrentStudentAsync();
             if (student == null) return Unauthorized();
             if (student.AdvisorId == null) return BadRequest("Student has no assigned advisor.");
 
-            var now = DateTimeOffset.UtcNow;
+            var dayOfWeek = (int)date.DayOfWeek;
 
-            var slots = await _context.Set<AdvisorAvailability>()
+            var rules = await _context.Set<AdvisorAvailabilityRule>()
                 .Where(x =>
                     x.AdvisorId == student.AdvisorId &&
                     x.IsActive &&
-                    !x.IsBooked &&
-                    x.StartAt > now)
-                .OrderBy(x => x.StartAt)
-                .Select(x => new AdvisorAvailabilitySlotDto
-                {
-                    AvailabilityId = x.AvailabilityId,
-                    StartAt = x.StartAt,
-                    EndAt = x.EndAt
-                })
+                    x.DayOfWeek == dayOfWeek)
+                .OrderBy(x => x.StartTime)
                 .ToListAsync();
 
-            return Ok(slots);
+            if (!rules.Any())
+                return Ok(new List<AdvisorCalendarStartTimeDto>());
+
+            var tz = GetBeirutTimeZone();
+            var localDateTime = new DateTime(
+                date.Year,
+                date.Month,
+                date.Day,
+                0, 0, 0,
+                DateTimeKind.Unspecified);
+
+            var offset = tz.GetUtcOffset(localDateTime);
+            var localDayStart = new DateTimeOffset(localDateTime, offset);
+
+            var utcDayStart = localDayStart.ToUniversalTime();
+            var utcDayEnd = localDayStart.AddDays(1).ToUniversalTime();
+
+            var meetings = await _context.Meetings
+                .Where(m =>
+                    m.AdvisorId == student.AdvisorId &&
+                    m.Status == "UPCOMING" &&
+                    m.StartAt < utcDayEnd &&
+                    m.EndAt > utcDayStart)
+                .ToListAsync();
+
+            var pendingRequests = await _context.Set<MeetingRequest>()
+                .Where(r =>
+                    r.AdvisorId == student.AdvisorId &&
+                    r.Status == "PENDING" &&
+                    r.StartAt < utcDayEnd &&
+                    r.EndAt > utcDayStart)
+                .ToListAsync();
+
+            var allStartTimes = new List<AdvisorCalendarStartTimeDto>();
+
+            foreach (var rule in rules)
+            {
+                var ruleStartTimes = MeetingCalendarBuilder.BuildAvailableStartTimes(
+                    date, rule, meetings, pendingRequests);
+
+                allStartTimes.AddRange(ruleStartTimes);
+            }
+
+            var merged = allStartTimes
+                .GroupBy(x => x.StartAt)
+                .Select(g => new AdvisorCalendarStartTimeDto
+                {
+                    StartAt = g.Key,
+                    AllowedDurations = g.SelectMany(x => x.AllowedDurations)
+                        .Distinct()
+                        .OrderBy(x => x)
+                        .ToList()
+                })
+                .OrderBy(x => x.StartAt)
+                .ToList();
+
+            return Ok(merged);
+        }
+
+        [HttpPost("my/requests")]
+        public async Task<IActionResult> CreateMeetingRequest([FromBody] CreateMeetingRequestDto dto)
+        {
+            var student = await GetCurrentStudentAsync();
+            if (student == null) return Unauthorized();
+            if (student.AdvisorId == null) return BadRequest("Student has no assigned advisor.");
+
+            if (!AllowedDurations.Contains(dto.DurationMinutes))
+                return BadRequest("Allowed durations are 15, 30, 45, or 60 minutes.");
+
+            var localStart = dto.StartAt;
+            var localEnd = dto.StartAt.AddMinutes(dto.DurationMinutes);
+
+            if (localEnd <= localStart)
+                return BadRequest("End time must be after start time.");
+
+            if (localStart <= GetBeirutNow())
+                return BadRequest("Meeting must be in the future.");
+
+            var targetDate = DateOnly.FromDateTime(localStart.Date);
+            var dayOfWeek = (int)targetDate.DayOfWeek;
+
+            var rules = await _context.Set<AdvisorAvailabilityRule>()
+                .Where(x =>
+                    x.AdvisorId == student.AdvisorId &&
+                    x.IsActive &&
+                    x.DayOfWeek == dayOfWeek)
+                .ToListAsync();
+
+            if (!rules.Any())
+                return BadRequest("Advisor is not available on this day.");
+
+            var matchingRule = rules.FirstOrDefault(rule =>
+            {
+                var ruleStartLocal = BuildBeirutDateTime(targetDate, rule.StartTime);
+                var ruleEndLocal = BuildBeirutDateTime(targetDate, rule.EndTime);
+
+                return localStart >= ruleStartLocal && localEnd <= ruleEndLocal;
+            });
+
+            if (matchingRule == null)
+                return BadRequest("Selected interval is outside advisor availability.");
+
+            var startAtUtc = localStart.ToUniversalTime();
+            var endAtUtc = localEnd.ToUniversalTime();
+
+            var advisorMeetingConflict = await _context.Meetings.AnyAsync(m =>
+                m.AdvisorId == student.AdvisorId &&
+                m.Status == "UPCOMING" &&
+                m.StartAt < endAtUtc &&
+                m.EndAt > startAtUtc);
+
+            if (advisorMeetingConflict)
+                return BadRequest("This time is no longer available.");
+
+            var advisorPendingConflict = await _context.Set<MeetingRequest>().AnyAsync(r =>
+                r.AdvisorId == student.AdvisorId &&
+                r.Status == "PENDING" &&
+                r.StartAt < endAtUtc &&
+                r.EndAt > startAtUtc);
+
+            if (advisorPendingConflict)
+                return BadRequest("This time is already requested by another student.");
+
+            var studentMeetingConflict = await _context.Meetings.AnyAsync(m =>
+                m.StudentId == student.StudentId &&
+                m.Status == "UPCOMING" &&
+                m.StartAt < endAtUtc &&
+                m.EndAt > startAtUtc);
+
+            if (studentMeetingConflict)
+                return BadRequest("You already have another meeting during this time.");
+
+            var alreadyRequested = await _context.Set<MeetingRequest>().AnyAsync(r =>
+                r.StudentId == student.StudentId &&
+                r.Status == "PENDING" &&
+                r.StartAt < endAtUtc &&
+                r.EndAt > startAtUtc);
+
+            if (alreadyRequested)
+                return BadRequest("You already requested an overlapping time.");
+
+            var request = new MeetingRequest
+            {
+                StudentId = student.StudentId,
+                AdvisorId = student.AdvisorId.Value,
+                StartAt = startAtUtc,
+                EndAt = endAtUtc,
+                Reason = dto.Reason,
+                Status = "PENDING",
+                RequestedAt = DateTimeOffset.UtcNow
+            };
+
+            _context.Set<MeetingRequest>().Add(request);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Meeting request submitted successfully." });
         }
 
         [HttpGet("my/requests")]
@@ -89,75 +239,21 @@ namespace EduAdvisory_Backend.Controllers
 
             var requests = await _context.Set<MeetingRequest>()
                 .Include(r => r.Advisor)
-                .Include(r => r.Availability)
                 .Where(r => r.StudentId == student.StudentId)
                 .OrderByDescending(r => r.RequestedAt)
-                .Select(r => new StudentMeetingRequestListItemDto
+                .Select(r => new
                 {
-                    RequestId = r.RequestId,
+                    r.RequestId,
                     AdvisorName = r.Advisor.Name,
-                    StartAt = r.Availability.StartAt,
-                    EndAt = r.Availability.EndAt,
-                    Status = r.Status,
-                    Reason = r.Reason,
-                    RejectionReason = r.RejectionReason
+                    r.StartAt,
+                    r.EndAt,
+                    r.Status,
+                    r.Reason,
+                    r.RejectionReason
                 })
                 .ToListAsync();
 
             return Ok(requests);
-        }
-
-        [HttpPost("my/requests")]
-        public async Task<IActionResult> CreateMeetingRequest([FromBody] CreateMeetingRequestDto dto)
-        {
-            var student = await GetCurrentStudentAsync();
-            if (student == null) return Unauthorized();
-            if (student.AdvisorId == null) return BadRequest("Student has no assigned advisor.");
-
-            var slot = await _context.Set<AdvisorAvailability>()
-                .FirstOrDefaultAsync(x =>
-                    x.AvailabilityId == dto.AvailabilityId &&
-                    x.AdvisorId == student.AdvisorId &&
-                    x.IsActive &&
-                    !x.IsBooked);
-
-            if (slot == null)
-                return BadRequest("Selected slot is no longer available.");
-
-            if (slot.StartAt <= DateTimeOffset.UtcNow)
-                return BadRequest("Cannot request a past slot.");
-
-            var alreadyRequested = await _context.Set<MeetingRequest>().AnyAsync(r =>
-                r.StudentId == student.StudentId &&
-                r.AvailabilityId == dto.AvailabilityId &&
-                r.Status == "PENDING");
-
-            if (alreadyRequested)
-                return BadRequest("You already requested this slot.");
-
-            var hasConflict = await _context.Meetings.AnyAsync(m =>
-                m.StudentId == student.StudentId &&
-                m.Status == "UPCOMING" &&
-                m.StartAt < slot.EndAt &&
-                m.EndAt > slot.StartAt);
-
-            if (hasConflict)
-                return BadRequest("You already have another meeting during this time.");
-
-            var request = new MeetingRequest
-            {
-                StudentId = student.StudentId,
-                AdvisorId = student.AdvisorId.Value,
-                AvailabilityId = slot.AvailabilityId,
-                Reason = dto.Reason,
-                Status = "PENDING",
-                RequestedAt = DateTimeOffset.UtcNow
-            };
-
-            _context.Set<MeetingRequest>().Add(request);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Meeting request submitted successfully." });
         }
 
         [HttpDelete("my/requests/{id:int}")]
@@ -247,6 +343,41 @@ namespace EduAdvisory_Backend.Controllers
                 .ToListAsync();
 
             return Ok(meetings);
+        }
+
+        private static DateTimeOffset BuildBeirutDateTime(DateOnly date, TimeSpan time)
+        {
+            var tz = GetBeirutTimeZone();
+
+            var localDateTime = new DateTime(
+                date.Year,
+                date.Month,
+                date.Day,
+                time.Hours,
+                time.Minutes,
+                time.Seconds,
+                DateTimeKind.Unspecified);
+
+            var offset = tz.GetUtcOffset(localDateTime);
+            return new DateTimeOffset(localDateTime, offset);
+        }
+
+        private static DateTimeOffset GetBeirutNow()
+        {
+            var tz = GetBeirutTimeZone();
+            return TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz);
+        }
+
+        private static TimeZoneInfo GetBeirutTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Beirut");
+            }
+            catch
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Middle East Standard Time");
+            }
         }
     }
 }

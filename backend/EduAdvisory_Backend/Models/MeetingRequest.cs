@@ -1,6 +1,6 @@
-﻿using EduAdvisory_Backend.Models;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+using EduAdvisory_Backend.Models;
 
 [Table("meeting_request")]
 public partial class MeetingRequest
@@ -15,8 +15,11 @@ public partial class MeetingRequest
     [Column("advisor_id")]
     public int AdvisorId { get; set; }
 
-    [Column("availability_id")]
-    public int AvailabilityId { get; set; }
+    [Column("start_at", TypeName = "timestamp with time zone")]
+    public DateTimeOffset StartAt { get; set; }
+
+    [Column("end_at", TypeName = "timestamp with time zone")]
+    public DateTimeOffset EndAt { get; set; }
 
     [Column("reason")]
     [StringLength(500)]
@@ -41,7 +44,4 @@ public partial class MeetingRequest
 
     [ForeignKey("AdvisorId")]
     public virtual Advisor Advisor { get; set; } = null!;
-
-    [ForeignKey("AvailabilityId")]
-    public virtual AdvisorAvailability Availability { get; set; } = null!;
 }

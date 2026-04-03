@@ -862,3 +862,127 @@
     width: 100%;
   }
 }
+.calendar-interval-card {
+  width: 100%;
+  border: 1px solid #dce7f3;
+  border-radius: 18px;
+  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.calendar-interval-card:hover {
+  transform: translateY(-2px);
+  border-color: #bfd7f2;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.06), 0 4px 10px rgba(15, 23, 42, 0.03);
+}
+
+.calendar-interval-card-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.calendar-interval-time {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.calendar-interval-status {
+  margin-top: 0.4rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+.calendar-interval-card {
+  width: 100%;
+  border: 1px solid #dce7f3;
+  border-radius: 18px;
+  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.calendar-interval-card:hover {
+  transform: translateY(-2px);
+  border-color: #bfd7f2;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.06), 0 4px 10px rgba(15, 23, 42, 0.03);
+}
+
+.calendar-interval-card-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.calendar-interval-time {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.calendar-interval-status {
+  margin-top: 0.4rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+.calendar-interval-card {
+  width: 100%;
+  border: 1px solid #dce7f3;
+  border-radius: 18px;
+  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.calendar-interval-card:hover {
+  transform: translateY(-2px);
+  border-color: #bfd7f2;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.06), 0 4px 10px rgba(15, 23, 42, 0.03);
+}
+
+.calendar-interval-time {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.calendar-interval-status {
+  margin-top: 0.4rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+.calendar-interval-card {
+  width: 100%;
+  border: 1px solid #dce7f3;
+  border-radius: 18px;
+  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.calendar-interval-card:hover {
+  transform: translateY(-2px);
+  border-color: #bfd7f2;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.06), 0 4px 10px rgba(15, 23, 42, 0.03);
+}
+
+.calendar-interval-time {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.calendar-interval-status {
+  margin-top: 0.4rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}

@@ -3,6 +3,7 @@ using System;
 using EduAdvisory_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EduAdvisory_Backend.Migrations
 {
     [DbContext(typeof(EduAdvisoryDbContext))]
-    partial class EduAdvisoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403111317_AddAdvisorAvailabilityRules1")]
+    partial class AddAdvisorAvailabilityRules1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -132,6 +135,10 @@ namespace EduAdvisory_Backend.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
+
+                    b.Property<int>("SlotDurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("slot_duration_minutes");
 
                     b.Property<TimeSpan>("StartTime")
                         .HasColumnType("interval")
@@ -804,9 +811,9 @@ namespace EduAdvisory_Backend.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("advisor_id");
 
-                    b.Property<DateTimeOffset>("EndAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("end_at");
+                    b.Property<int>("AvailabilityId")
+                        .HasColumnType("integer")
+                        .HasColumnName("availability_id");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(500)
@@ -826,10 +833,6 @@ namespace EduAdvisory_Backend.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("responded_at");
 
-                    b.Property<DateTimeOffset>("StartAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("start_at");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -843,6 +846,8 @@ namespace EduAdvisory_Backend.Migrations
                     b.HasKey("RequestId");
 
                     b.HasIndex("AdvisorId");
+
+                    b.HasIndex("AvailabilityId");
 
                     b.HasIndex("StudentId");
 
@@ -1093,6 +1098,12 @@ namespace EduAdvisory_Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("EduAdvisory_Backend.Models.AdvisorAvailability", "Availability")
+                        .WithMany()
+                        .HasForeignKey("AvailabilityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("EduAdvisory_Backend.Models.SisStudent", "Student")
                         .WithMany()
                         .HasForeignKey("StudentId")
@@ -1100,6 +1111,8 @@ namespace EduAdvisory_Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Advisor");
+
+                    b.Navigation("Availability");
 
                     b.Navigation("Student");
                 });
