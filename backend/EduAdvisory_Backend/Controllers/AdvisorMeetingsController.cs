@@ -32,95 +32,83 @@ namespace EduAdvisory_Backend.Controllers
                 .FirstOrDefaultAsync();
         }
 
-        [HttpGet("availability")]
-        public async Task<IActionResult> GetMyAvailability()
+        [HttpGet("weekly-availability")]
+        public async Task<IActionResult> GetWeeklyAvailability()
         {
             var advisor = await GetCurrentAdvisorAsync();
             if (advisor == null) return Unauthorized();
 
-            var slots = await _context.Set<AdvisorAvailability>()
+            var rules = await _context.Set<AdvisorAvailabilityRule>()
                 .Where(x => x.AdvisorId == advisor.AdvisorId && x.IsActive)
-                .OrderBy(x => x.StartAt)
-                .Select(x => new
+                .OrderBy(x => x.DayOfWeek)
+                .ThenBy(x => x.StartTime)
+                .Select(x => new AdvisorAvailabilityRuleDto
                 {
-                    x.AvailabilityId,
-                    x.StartAt,
-                    x.EndAt,
-                    x.IsBooked,
-                    x.IsActive
+                    RuleId = x.RuleId,
+                    DayOfWeek = x.DayOfWeek,
+                    StartTime = x.StartTime,
+                    EndTime = x.EndTime,
+                    IsActive = x.IsActive
                 })
                 .ToListAsync();
 
-            return Ok(slots);
+            return Ok(rules);
         }
 
-        [HttpPost("availability")]
-        public async Task<IActionResult> CreateAvailability([FromBody] CreateAdvisorAvailabilityDto dto)
+        [HttpPost("weekly-availability")]
+        public async Task<IActionResult> CreateWeeklyAvailability([FromBody] CreateAdvisorAvailabilityRuleDto dto)
         {
             var advisor = await GetCurrentAdvisorAsync();
             if (advisor == null) return Unauthorized();
 
-            if (dto.EndAt <= dto.StartAt)
+            if (dto.DayOfWeek < 0 || dto.DayOfWeek > 6)
+                return BadRequest("DayOfWeek must be between 0 and 6.");
+
+            if (dto.EndTime <= dto.StartTime)
                 return BadRequest("End time must be after start time.");
 
-            if (dto.StartAt <= DateTimeOffset.UtcNow)
-                return BadRequest("Availability must be in the future.");
-
-            var overlap = await _context.Set<AdvisorAvailability>().AnyAsync(x =>
+            var overlap = await _context.Set<AdvisorAvailabilityRule>().AnyAsync(x =>
                 x.AdvisorId == advisor.AdvisorId &&
                 x.IsActive &&
-                x.StartAt < dto.EndAt &&
-                x.EndAt > dto.StartAt);
+                x.DayOfWeek == dto.DayOfWeek &&
+                x.StartTime < dto.EndTime &&
+                x.EndTime > dto.StartTime);
 
             if (overlap)
-                return BadRequest("This slot overlaps with another availability.");
+                return BadRequest("This availability overlaps with another rule.");
 
-            var meetingOverlap = await _context.Meetings.AnyAsync(m =>
-                m.AdvisorId == advisor.AdvisorId &&
-                m.Status == "UPCOMING" &&
-                m.StartAt < dto.EndAt &&
-                m.EndAt > dto.StartAt);
-
-            if (meetingOverlap)
-                return BadRequest("This slot overlaps with an existing meeting.");
-
-            var slot = new AdvisorAvailability
+            var rule = new AdvisorAvailabilityRule
             {
                 AdvisorId = advisor.AdvisorId,
-                StartAt = dto.StartAt,
-                EndAt = dto.EndAt,
-                IsBooked = false,
+                DayOfWeek = dto.DayOfWeek,
+                StartTime = dto.StartTime,
+                EndTime = dto.EndTime,
                 IsActive = true,
                 CreatedAt = DateTimeOffset.UtcNow
             };
 
-            _context.Set<AdvisorAvailability>().Add(slot);
+            _context.Set<AdvisorAvailabilityRule>().Add(rule);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Availability slot created successfully." });
+            return Ok(new { message = "Weekly availability created successfully." });
         }
 
-        [HttpDelete("availability/{id:int}")]
-        public async Task<IActionResult> DeleteAvailability(int id)
+        [HttpDelete("weekly-availability/{id:int}")]
+        public async Task<IActionResult> DeleteWeeklyAvailability(int id)
         {
             var advisor = await GetCurrentAdvisorAsync();
             if (advisor == null) return Unauthorized();
 
-            var slot = await _context.Set<AdvisorAvailability>()
-                .FirstOrDefaultAsync(x =>
-                    x.AvailabilityId == id &&
-                    x.AdvisorId == advisor.AdvisorId);
+            var rule = await _context.Set<AdvisorAvailabilityRule>()
+                .FirstOrDefaultAsync(x => x.RuleId == id && x.AdvisorId == advisor.AdvisorId && x.IsActive);
 
-            if (slot == null)
-                return NotFound("Availability slot not found.");
+            if (rule == null)
+                return NotFound("Availability rule not found.");
 
-            if (slot.IsBooked)
-                return BadRequest("Booked slots cannot be deleted.");
-
-            slot.IsActive = false;
+            rule.IsActive = false;
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Availability slot removed." });
+            return Ok(new { message = "Weekly availability removed." });
         }
 
         [HttpGet("requests/pending")]
@@ -131,19 +119,18 @@ namespace EduAdvisory_Backend.Controllers
 
             var requests = await _context.Set<MeetingRequest>()
                 .Include(r => r.Student)
-                .Include(r => r.Availability)
                 .Where(r => r.AdvisorId == advisor.AdvisorId && r.Status == "PENDING")
-                .OrderBy(r => r.Availability.StartAt)
-                .Select(r => new AdvisorMeetingRequestDto
+                .OrderBy(r => r.StartAt)
+                .Select(r => new
                 {
-                    RequestId = r.RequestId,
-                    StudentId = r.StudentId,
+                    r.RequestId,
+                    r.StudentId,
                     StudentName = $"{r.Student.FirstName} {r.Student.LastName}",
-                    StartAt = r.Availability.StartAt,
-                    EndAt = r.Availability.EndAt,
-                    Reason = r.Reason,
-                    Status = r.Status,
-                    RequestedAt = r.RequestedAt
+                    r.StartAt,
+                    r.EndAt,
+                    r.Reason,
+                    r.Status,
+                    r.RequestedAt
                 })
                 .ToListAsync();
 
@@ -152,16 +139,15 @@ namespace EduAdvisory_Backend.Controllers
 
         [HttpPost("requests/{id:int}/respond")]
         public async Task<IActionResult> RespondToRequest(
-    int id,
-    [FromBody] RespondMeetingRequestDto dto,
-    [FromServices] ISharedGoogleMeetService googleMeetService)
+            int id,
+            [FromBody] RespondMeetingRequestDto dto,
+            [FromServices] ISharedGoogleMeetService googleMeetService)
         {
             var advisor = await GetCurrentAdvisorAsync();
             if (advisor == null) return Unauthorized();
 
             var request = await _context.Set<MeetingRequest>()
                 .Include(r => r.Student)
-                .Include(r => r.Availability)
                 .FirstOrDefaultAsync(r =>
                     r.RequestId == id &&
                     r.AdvisorId == advisor.AdvisorId);
@@ -187,14 +173,11 @@ namespace EduAdvisory_Backend.Controllers
             if (decision != "ACCEPTED")
                 return BadRequest("Decision must be ACCEPTED or REJECTED.");
 
-            if (request.Availability.IsBooked || !request.Availability.IsActive)
-                return BadRequest("This slot is no longer available.");
-
             var advisorConflict = await _context.Meetings.AnyAsync(m =>
                 m.AdvisorId == advisor.AdvisorId &&
                 m.Status == "UPCOMING" &&
-                m.StartAt < request.Availability.EndAt &&
-                m.EndAt > request.Availability.StartAt);
+                m.StartAt < request.EndAt &&
+                m.EndAt > request.StartAt);
 
             if (advisorConflict)
                 return BadRequest("You already have another meeting during this time.");
@@ -202,8 +185,8 @@ namespace EduAdvisory_Backend.Controllers
             var studentConflict = await _context.Meetings.AnyAsync(m =>
                 m.StudentId == request.StudentId &&
                 m.Status == "UPCOMING" &&
-                m.StartAt < request.Availability.EndAt &&
-                m.EndAt > request.Availability.StartAt);
+                m.StartAt < request.EndAt &&
+                m.EndAt > request.StartAt);
 
             if (studentConflict)
                 return BadRequest("Student already has another meeting during this time.");
@@ -212,11 +195,8 @@ namespace EduAdvisory_Backend.Controllers
 
             request.Status = "ACCEPTED";
             request.RespondedAt = DateTimeOffset.UtcNow;
-            request.Availability.IsBooked = true;
 
-            var startAt = request.Availability.StartAt;
-            var endAt = request.Availability.EndAt;
-            var durationMinutes = (int)(endAt - startAt).TotalMinutes;
+            var durationMinutes = (int)(request.EndAt - request.StartAt).TotalMinutes;
 
             var meeting = new Meeting
             {
@@ -225,13 +205,10 @@ namespace EduAdvisory_Backend.Controllers
                 RequestId = request.RequestId,
                 Title = "Academic Advising Meeting",
                 MeetingType = "ONLINE",
-
-                StartAt = startAt,
-                EndAt = endAt,
-
-                MeetingDate = startAt,
+                StartAt = request.StartAt,
+                EndAt = request.EndAt,
+                MeetingDate = request.StartAt,
                 DurationMinutes = durationMinutes,
-
                 MeetingLink = googleMeet.MeetingUri,
                 GoogleSpaceName = googleMeet.SpaceName,
                 Status = "UPCOMING",

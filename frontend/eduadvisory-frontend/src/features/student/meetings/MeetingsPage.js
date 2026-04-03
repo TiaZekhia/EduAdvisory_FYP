@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "primereact/card";
 import { Tag } from "primereact/tag";
 import { Skeleton } from "primereact/skeleton";
-import { Divider } from "primereact/divider";
 import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
+import { Calendar } from "primereact/calendar";
+import { Dropdown } from "primereact/dropdown";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Message } from "primereact/message";
 
@@ -13,23 +14,34 @@ import { studentMeetingsApi } from "../../../services/students/studentMeetingsAp
 import { PageHero } from "../../../shared/components/PageHero";
 import "./MeetingsPage.css";
 
+const durationOptions = [
+  { label: "15 min", value: 15 },
+  { label: "30 min", value: 30 },
+  { label: "45 min", value: 45 },
+  { label: "1 hour", value: 60 },
+];
+
 export default function MeetingsPage() {
   const { summary } = useStudentSummary();
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [actionMsg, setActionMsg] = useState("");
 
   const [advisor, setAdvisor] = useState(null);
   const [upcoming, setUpcoming] = useState([]);
   const [history, setHistory] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [availability, setAvailability] = useState([]);
+
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [calendarStartTimes, setCalendarStartTimes] = useState([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
 
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedStartTime, setSelectedStartTime] = useState(null);
+  const [selectedDuration, setSelectedDuration] = useState(null);
   const [reason, setReason] = useState("");
   const [savingRequest, setSavingRequest] = useState(false);
-  const [actionMsg, setActionMsg] = useState("");
   const [actionError, setActionError] = useState("");
 
   const pendingRequestsCount = useMemo(
@@ -37,34 +49,24 @@ export default function MeetingsPage() {
     [requests]
   );
 
-  const nextAvailableSlot = useMemo(() => {
-    if (!availability?.length) return null;
-    return availability[0];
-  }, [availability]);
+  const availableCount = useMemo(() => calendarStartTimes.length, [calendarStartTimes]);
 
-  const loadData = async () => {
+  const loadBaseData = async () => {
     setLoading(true);
     setErr("");
+
     try {
-      const [
-        advisorRes,
-        upcomingRes,
-        historyRes,
-        requestsRes,
-        availabilityRes,
-      ] = await Promise.all([
+      const [advisorRes, upcomingRes, historyRes, requestsRes] = await Promise.all([
         studentMeetingsApi.getAdvisor(),
         studentMeetingsApi.getUpcoming(),
         studentMeetingsApi.getHistory(),
         studentMeetingsApi.getRequests(),
-        studentMeetingsApi.getAdvisorAvailability(),
       ]);
 
       setAdvisor(advisorRes.data || null);
       setUpcoming(upcomingRes.data || []);
       setHistory(historyRes.data || []);
       setRequests(requestsRes.data || []);
-      setAvailability(availabilityRes.data || []);
     } catch (e) {
       console.error(e);
       setErr(e?.response?.data ?? e?.message ?? "Failed to load meetings page.");
@@ -73,37 +75,58 @@ export default function MeetingsPage() {
     }
   };
 
+  const loadCalendar = async (date) => {
+    try {
+      setCalendarLoading(true);
+      const yyyyMmDd = toDateOnly(date);
+      const res = await studentMeetingsApi.getAdvisorCalendar(yyyyMmDd);
+      setCalendarStartTimes(res.data || []);
+    } catch (e) {
+      console.error(e);
+      setCalendarStartTimes([]);
+      setErr(e?.response?.data ?? e?.message ?? "Failed to load advisor calendar.");
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
   useEffect(() => {
-    loadData();
+    loadBaseData();
   }, []);
 
-  const handleOpenRequest = (slot) => {
-    setSelectedSlot(slot);
+  useEffect(() => {
+    if (calendarDate) loadCalendar(calendarDate);
+  }, [calendarDate]);
+
+  const handleOpenRequest = (startTimeItem) => {
+    setSelectedStartTime(startTimeItem);
+    setSelectedDuration(startTimeItem.allowedDurations?.[0] ?? null);
     setReason("");
     setActionError("");
     setRequestDialogOpen(true);
   };
 
   const handleSubmitRequest = async () => {
-    if (!selectedSlot) return;
+    if (!selectedStartTime || !selectedDuration) return;
 
     if (!reason.trim()) {
       setActionError("Please write a short reason for the meeting.");
       return;
     }
 
-    setSavingRequest(true);
-    setActionError("");
-
     try {
+      setSavingRequest(true);
+      setActionError("");
+
       await studentMeetingsApi.createRequest({
-        availabilityId: selectedSlot.availabilityId,
+        startAt: selectedStartTime.startAt,
+        durationMinutes: selectedDuration,
         reason: reason.trim(),
       });
 
       setActionMsg("Meeting request submitted successfully.");
       setRequestDialogOpen(false);
-      await loadData();
+      await Promise.all([loadBaseData(), loadCalendar(calendarDate)]);
     } catch (e) {
       console.error(e);
       setActionError(e?.response?.data ?? e?.message ?? "Failed to submit request.");
@@ -118,7 +141,7 @@ export default function MeetingsPage() {
       setActionMsg("");
       await studentMeetingsApi.cancelRequest(requestId);
       setActionMsg("Meeting request canceled successfully.");
-      await loadData();
+      await Promise.all([loadBaseData(), loadCalendar(calendarDate)]);
     } catch (e) {
       console.error(e);
       setErr(e?.response?.data ?? e?.message ?? "Failed to cancel request.");
@@ -137,17 +160,20 @@ export default function MeetingsPage() {
     );
   }
 
-  if (err) return <div className="p-4 text-danger">{String(err)}</div>;
+  if (err && !advisor && !upcoming.length && !history.length && !requests.length) {
+    return <div className="p-4 text-danger">{String(err)}</div>;
+  }
 
   return (
     <div className="meetings-page container-fluid p-3 p-md-4">
       <PageHero
         title="Meetings"
         badge={`${summary?.programCode ?? "-"} • Semester ${summary?.currentSemester ?? "-"}`}
-        subtitle="Schedule and manage your advising meetings"
+        subtitle="Request and manage advising meetings"
       />
 
       {actionMsg ? <Message severity="success" text={actionMsg} className="mb-4" /> : null}
+      {err ? <Message severity="error" text={String(err)} className="mb-4" /> : null}
 
       <div className="row g-4 mb-4">
         <CountCard title="Upcoming Meetings" value={upcoming.length} icon="pi pi-calendar-plus" />
@@ -158,46 +184,124 @@ export default function MeetingsPage() {
       <Card className="meetings-card shadow-sm border-0 mb-4">
         <div className="meetings-card-header">
           <div>
-            <div className="fw-semibold fs-4">Upcoming Meetings</div>
+            <div className="fw-semibold fs-4">Request a Meeting</div>
             <div className="text-muted mt-1">
-              Your confirmed upcoming sessions with your advisor
+              Choose a date, then request a time with your advisor
             </div>
           </div>
+
+          <Tag
+            value={`${availableCount} start times`}
+            severity={availableCount ? "success" : "warning"}
+            className="meeting-status-tag"
+          />
         </div>
 
-        {upcoming?.length ? (
-          <div className="d-flex flex-column gap-4">
-            <div>
-              <div className="meeting-section-label mb-3">Next Meeting</div>
-              <MeetingBigCard meeting={upcoming[0]} />
-            </div>
+        <div className="meeting-request-layout">
+          <div className="meeting-request-sidebar">
+            <div className="meeting-advisor-box h-100">
+              <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                <div>
+                  <div className="meeting-advisor-label">Your Academic Advisor</div>
+                  <div className="meeting-advisor-name">{advisor?.name ?? "Not assigned"}</div>
+                </div>
 
-            {upcoming.length > 1 ? (
-              <div>
-                <div className="meeting-section-label mb-3">Other Upcoming Meetings</div>
-                <div className="d-flex flex-column gap-3">
-                  {upcoming.slice(1).map((meeting) => (
-                    <UpcomingMeetingRow key={meeting.meetingId} meeting={meeting} />
-                  ))}
+                <Tag
+                  value={availableCount ? "Available" : "No Availability"}
+                  severity={availableCount ? "success" : "warning"}
+                  className="meeting-status-tag"
+                />
+              </div>
+
+              <div className="meeting-advisor-summary mb-3">
+                Select a date and request a meeting time. Your advisor will review the request and
+                approve or reject it.
+              </div>
+
+              <div className="row g-3">
+                <div className="col-12">
+                  <div className="meeting-info-tile">
+                    <div className="meeting-info-label">
+                      <i className="pi pi-envelope" />
+                      Email
+                    </div>
+                    <div className="meeting-info-value">{advisor?.email ?? "-"}</div>
+                  </div>
+                </div>
+
+                <div className="col-12">
+                  <div className="meeting-info-tile">
+                    <div className="meeting-info-label">
+                      <i className="pi pi-building" />
+                      Office
+                    </div>
+                    <div className="meeting-info-value">{advisor?.office ?? "-"}</div>
+                  </div>
                 </div>
               </div>
-            ) : null}
+
+              <div className="meeting-reminder-box mt-3">
+                Allowed durations: 15, 30, 45, or 60 minutes.
+              </div>
+            </div>
           </div>
-        ) : (
-          <EmptyState
-            icon="pi pi-calendar"
-            title="No upcoming meetings"
-            text="You do not have any confirmed meetings right now."
-          />
-        )}
+
+          <div className="meeting-request-main">
+            <div className="mb-4">
+              <label className="meeting-advisor-label d-block mb-2">Choose Date</label>
+              <Calendar
+                value={calendarDate}
+                onChange={(e) => setCalendarDate(e.value)}
+                dateFormat="yy-mm-dd"
+                className="w-100"
+                showIcon
+              />
+            </div>
+
+            <div className="meeting-subsection-header mb-3">
+              <div>
+                <div className="meeting-subsection-title">Available Start Times</div>
+                <div className="meeting-subsection-text">{formatDateLong(calendarDate)}</div>
+              </div>
+            </div>
+
+            {calendarLoading ? (
+              <Skeleton height="10rem" />
+            ) : calendarStartTimes.length ? (
+              <div className="row g-3">
+                {calendarStartTimes.map((item, index) => (
+                  <div className="col-12 col-md-6 col-xl-4" key={`${item.startAt}-${index}`}>
+                    <button
+                      type="button"
+                      className="calendar-interval-card"
+                      onClick={() => handleOpenRequest(item)}
+                    >
+                      <div className="calendar-interval-time">{formatTime(item.startAt)}</div>
+                      <div className="calendar-interval-status">
+                        Allowed: {item.allowedDurations.map((x) => `${x}m`).join(", ")}
+                      </div>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="pi pi-calendar"
+                title="No available times"
+                text="There is no advisor availability for the selected date."
+              />
+            )}
+          </div>
+        </div>
       </Card>
 
       <Card className="meetings-card shadow-sm border-0 mb-4">
         <div className="meetings-card-header">
           <div>
-            <div className="fw-semibold fs-4">Pending Requests</div>
-            <div className="text-muted mt-1">Requests waiting for advisor approval</div>
+            <div className="fw-semibold fs-4">My Requests</div>
+            <div className="text-muted mt-1">Requests you submitted to your advisor</div>
           </div>
+
           <Tag
             value={`${pendingRequestsCount} Pending`}
             severity={pendingRequestsCount ? "warning" : "info"}
@@ -223,99 +327,31 @@ export default function MeetingsPage() {
       <Card className="meetings-card shadow-sm border-0 mb-4">
         <div className="meetings-card-header">
           <div>
-            <div className="fw-semibold fs-4">Request a Meeting</div>
-            <div className="text-muted mt-1">Choose one of your advisor’s available slots</div>
-          </div>
-
-          {nextAvailableSlot ? (
-            <div className="meeting-highlight-chip">
-              <i className="pi pi-bolt" />
-              Next available: {formatDateShort(nextAvailableSlot.startAt)}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="meeting-request-layout">
-          <div className="meeting-request-sidebar">
-            <div className="meeting-advisor-box h-100">
-              <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
-                <div>
-                  <div className="meeting-advisor-label">Your Academic Advisor</div>
-                  <div className="meeting-advisor-name">{advisor?.name ?? "Not assigned"}</div>
-                </div>
-
-                <Tag
-                  value={availability.length ? "Slots Available" : "No Slots"}
-                  severity={availability.length ? "success" : "warning"}
-                  className="meeting-status-tag"
-                />
-              </div>
-
-              <div className="meeting-advisor-summary mb-3">
-                Book an advising session to discuss course planning, academic progress,
-                registration, or any concerns related to your semester.
-              </div>
-
-              <div className="row g-3">
-                <div className="col-12">
-                  <div className="meeting-info-tile">
-                    <div className="meeting-info-label">
-                      <i className="pi pi-envelope" />
-                      Email
-                    </div>
-                    <div className="meeting-info-value">{advisor?.email ?? "-"}</div>
-                  </div>
-                </div>
-
-                <div className="col-12">
-                  <div className="meeting-info-tile">
-                    <div className="meeting-info-label">
-                      <i className="pi pi-building" />
-                      Office
-                    </div>
-                    <div className="meeting-info-value">{advisor?.office ?? "-"}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="meeting-request-main">
-            {availability?.length ? (
-              <>
-                <div className="meeting-subsection-header mb-3">
-                  <div>
-                    <div className="meeting-subsection-title">Available Time Slots</div>
-                    <div className="meeting-subsection-text">
-                      Select the slot that works best for you and send a request.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="row g-3">
-                  {availability.map((slot) => (
-                    <div className="col-12 col-xl-6" key={slot.availabilityId}>
-                      <RequestSlotCard slot={slot} onRequest={() => handleOpenRequest(slot)} />
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <EmptyState
-                icon="pi pi-clock"
-                title="No available slots"
-                text="Your advisor has not published any available slots yet."
-              />
-            )}
+            <div className="fw-semibold fs-4">Upcoming Meetings</div>
+            <div className="text-muted mt-1">Approved upcoming meetings</div>
           </div>
         </div>
+
+        {upcoming?.length ? (
+          <div className="d-flex flex-column gap-3">
+            {upcoming.map((meeting) => (
+              <UpcomingMeetingRow key={meeting.meetingId} meeting={meeting} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon="pi pi-calendar"
+            title="No upcoming meetings"
+            text="Approved meetings will appear here."
+          />
+        )}
       </Card>
 
       <Card className="meetings-card shadow-sm border-0">
         <div className="meetings-card-header">
           <div>
             <div className="fw-semibold fs-4">Meeting History</div>
-            <div className="text-muted mt-1">Past completed meetings and notes</div>
+            <div className="text-muted mt-1">Past meetings and notes</div>
           </div>
         </div>
 
@@ -340,7 +376,7 @@ export default function MeetingsPage() {
         style={{ width: "38rem", maxWidth: "95vw" }}
         onHide={() => setRequestDialogOpen(false)}
       >
-        {selectedSlot ? (
+        {selectedStartTime ? (
           <div>
             <div className="meeting-dialog-banner mb-3">
               <div className="meeting-dialog-banner-icon">
@@ -348,16 +384,27 @@ export default function MeetingsPage() {
               </div>
 
               <div>
-                <div className="meeting-dialog-banner-title">Selected Time Slot</div>
+                <div className="meeting-dialog-banner-title">Selected Start Time</div>
                 <div className="meeting-dialog-banner-text">
-                  {formatDateLong(selectedSlot.startAt)} • {formatTime(selectedSlot.startAt)} -{" "}
-                  {formatTime(selectedSlot.endAt)}
+                  {formatDateLong(selectedStartTime.startAt)} • {formatTime(selectedStartTime.startAt)}
                 </div>
               </div>
             </div>
 
+            <div className="mb-3">
+              <label className="meeting-advisor-label d-block mb-2">Duration</label>
+              <Dropdown
+                value={selectedDuration}
+                onChange={(e) => setSelectedDuration(e.value)}
+                options={durationOptions.filter((x) =>
+                  selectedStartTime.allowedDurations.includes(x.value)
+                )}
+                className="w-100"
+              />
+            </div>
+
             <div className="meeting-reminder-box mb-3">
-              Tell your advisor what you want to discuss so they can prepare before the session.
+              Tell your advisor what you want to discuss so they can prepare before reviewing your request.
             </div>
 
             <label className="meeting-advisor-label mb-2 d-block">Reason for meeting</label>
@@ -365,7 +412,7 @@ export default function MeetingsPage() {
               rows={5}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Example: I want help choosing courses for next semester and reviewing my academic progress."
+              placeholder="Example: I want help choosing courses for next semester and reviewing my progress."
               className="w-100"
             />
 
@@ -383,7 +430,7 @@ export default function MeetingsPage() {
                 label={savingRequest ? "Submitting..." : "Submit Request"}
                 icon="pi pi-check"
                 onClick={handleSubmitRequest}
-                disabled={savingRequest || !reason.trim()}
+                disabled={savingRequest || !reason.trim() || !selectedDuration}
               />
             </div>
           </div>
@@ -418,71 +465,6 @@ function EmptyState({ icon, title, text }) {
       <div>
         <div className="meetings-empty-title">{title}</div>
         <div className="meetings-empty-text">{text}</div>
-      </div>
-    </div>
-  );
-}
-
-function MeetingBigCard({ meeting }) {
-  const hasLink = meeting.meetingLink && meeting.meetingLink.trim();
-
-  return (
-    <div className="meeting-feature-card">
-      <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
-        <div className="flex-grow-1">
-          <div className="meeting-feature-title">{meeting.title}</div>
-
-          <div className="meeting-feature-meta mt-3">
-            <span className="meeting-feature-meta-item">
-              <i className="pi pi-calendar" />
-              {formatDateLong(meeting.startAt)}
-            </span>
-
-            <span className="meeting-feature-meta-item">
-              <i className="pi pi-clock" />
-              {formatTime(meeting.startAt)} - {formatTime(meeting.endAt)}
-            </span>
-
-            <span className="meeting-feature-meta-item">
-              <i className="pi pi-user" />
-              {meeting.advisorName}
-            </span>
-
-            {meeting.advisorEmail ? (
-              <span className="meeting-feature-meta-item">
-                <i className="pi pi-envelope" />
-                {meeting.advisorEmail}
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        <Tag value={meeting.status} severity="info" className="meeting-status-tag" />
-      </div>
-
-      <Divider className="meeting-divider" />
-
-      <div className="meeting-access-panel">
-        <div>
-          <div className="meeting-access-label">Meeting Access</div>
-          <div className="meeting-access-subtext">
-            Use the generated Google Meet link to join your advising session.
-          </div>
-        </div>
-
-        {hasLink ? (
-          <a
-            href={meeting.meetingLink}
-            target="_blank"
-            rel="noreferrer"
-            className="meeting-primary-link"
-          >
-            <i className="pi pi-video me-2" />
-            Join Google Meet
-          </a>
-        ) : (
-          <div className="meeting-link-pending-box">Meeting link is not available yet.</div>
-        )}
       </div>
     </div>
   );
@@ -529,43 +511,6 @@ function UpcomingMeetingRow({ meeting }) {
             <span className="meeting-link-pending">Link pending</span>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function RequestSlotCard({ slot, onRequest }) {
-  return (
-    <div className="meeting-slot-card">
-      <div className="meeting-slot-card-top">
-        <div>
-          <div className="meeting-slot-title">Available Slot</div>
-          <div className="meeting-slot-date">{formatDateLong(slot.startAt)}</div>
-        </div>
-
-        <Tag value="OPEN" severity="success" className="meeting-status-tag" />
-      </div>
-
-      <div className="meeting-slot-timebox">
-        <div className="meeting-slot-time">
-          <i className="pi pi-clock" />
-          {formatTime(slot.startAt)} - {formatTime(slot.endAt)}
-        </div>
-        <div className="meeting-slot-duration">
-          {getDurationLabel(slot.startAt, slot.endAt)}
-        </div>
-      </div>
-
-      <div className="meeting-slot-footer">
-        <div className="meeting-slot-note">
-          Choose this slot if it fits your schedule.
-        </div>
-        <Button
-          label="Request This Slot"
-          icon="pi pi-send"
-          className="p-button-sm"
-          onClick={onRequest}
-        />
       </div>
     </div>
   );
@@ -675,6 +620,13 @@ function RequestRow({ request, onCancel }) {
   );
 }
 
+function toDateOnly(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function formatDateLong(dateLike) {
   const d = new Date(dateLike);
   return d.toLocaleDateString(undefined, {
@@ -700,18 +652,4 @@ function formatTime(dateLike) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function getDurationLabel(startLike, endLike) {
-  const start = new Date(startLike);
-  const end = new Date(endLike);
-  const diffMs = end - start;
-  const totalMinutes = Math.max(0, Math.round(diffMs / 60000));
-
-  if (totalMinutes < 60) return `${totalMinutes} min`;
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-
-  if (!mins) return `${hours} hr`;
-  return `${hours} hr ${mins} min`;
 }

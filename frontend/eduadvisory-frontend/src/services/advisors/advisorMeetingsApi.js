@@ -1,9 +1,9 @@
 import apiClient from "../apiClient";
 
 export const advisorMeetingsApi = {
-  getAvailability: () => apiClient.get("/advisor-meetings/availability"),
-  createAvailability: (payload) => apiClient.post("/advisor-meetings/availability", payload),
-  deleteAvailability: (id) => apiClient.delete(`/advisor-meetings/availability/${id}`),
+  getWeeklyAvailability: () => apiClient.get("/advisor-meetings/weekly-availability"),
+  createWeeklyAvailability: (payload) => apiClient.post("/advisor-meetings/weekly-availability", payload),
+  deleteWeeklyAvailability: (id) => apiClient.delete(`/advisor-meetings/weekly-availability/${id}`),
 
   getPendingRequests: () => apiClient.get("/advisor-meetings/requests/pending"),
   respondToRequest: (id, payload) =>
