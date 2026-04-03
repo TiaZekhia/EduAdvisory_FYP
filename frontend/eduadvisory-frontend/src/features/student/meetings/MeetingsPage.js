@@ -64,8 +64,7 @@ export default function MeetingsPage() {
       ]);
 
       setAdvisor(advisorRes.data || null);
-      setUpcoming(upcomingRes.data || []);
-      setHistory(historyRes.data || []);
+      setUpcoming((upcomingRes.data || []).filter(m => new Date(m.endAt ?? m.startAt) > new Date()));      setHistory(historyRes.data || []);
       setRequests(requestsRes.data || []);
     } catch (e) {
       console.error(e);
@@ -544,8 +543,6 @@ function MeetingHistoryRow({ meeting }) {
             </div>
           </div>
         </div>
-
-        <Tag value={meeting.status} severity="success" className="meeting-status-tag" />
       </div>
     </div>
   );

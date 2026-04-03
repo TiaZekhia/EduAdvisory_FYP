@@ -2,6 +2,7 @@
 using EduAdvisory_Backend.DTOs.Meetings;
 using EduAdvisory_Backend.Interfaces.Services;
 using EduAdvisory_Backend.Models;
+using EduAdvisory_Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -191,7 +192,19 @@ namespace EduAdvisory_Backend.Controllers
             if (studentConflict)
                 return BadRequest("Student already has another meeting during this time.");
 
-            var googleMeet = await googleMeetService.CreateMeetingSpaceAsync();
+            SharedGoogleMeetCreateResult googleMeet;
+            try
+            {
+                googleMeet = await googleMeetService.CreateMeetingSpaceAsync();
+            }
+            catch (SharedGoogleAuthException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message,
+                    reconnectRequired = ex.ReconnectRequired
+                });
+            }
 
             request.Status = "ACCEPTED";
             request.RespondedAt = DateTimeOffset.UtcNow;
