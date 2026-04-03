@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "../../shared/components/ProtectedRoute";
 import AdvisorLayout from "../layouts/AdvisorLayout";
 import AdvisorDashboardPage from "../../features/advisor/dashboard/AdvisorDashboardPage";
+import AdvisorStudentAnalysisPage from "../../features/advisor/studentAnalysis/AdvisorStudentAnalysisPage";
 import AdvisorMeetingsPage from "../../features/advisor/meetings/AdvisorMeetingsPage";
 import AdvisorMessagesPage from "../../features/advisor/messages/AdvisorMessagesPage";
 import { AdvisorSummaryProvider } from "../../features/advisor/context/AdvisorSummaryProvider";
@@ -24,6 +25,7 @@ export const advisorRouter = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <AdvisorDashboardPage /> },
+      { path: "student-analysis", element: <AdvisorStudentAnalysisPage /> },
       { path: "meetings", element: <AdvisorMeetingsPage /> },
       { path: "messages", element: <AdvisorMessagesPage /> },
     ],
