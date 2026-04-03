@@ -12,6 +12,7 @@ import { Skeleton } from "primereact/skeleton";
 import { advisorMeetingsApi } from "../../../services/advisors/advisorMeetingsApi";
 import { PageHero } from "../../../shared/components/PageHero";
 import "./AdvisorMeetingsPage.css";
+import { sharedGoogleAuthApi } from "../../../shared/sharedGoogleAuthApi";
 
 const dayOptions = [
   { label: "Sunday", value: 0 },
@@ -33,6 +34,14 @@ export default function AdvisorMeetingsPage() {
   const [upcomingMeetings, setUpcomingMeetings] = useState([]);
   const [historyMeetings, setHistoryMeetings] = useState([]);
 
+  const [googleStatus, setGoogleStatus] = useState({
+    connected: false,
+    googleEmail: null,
+  });
+
+  // NEW: tracks whether a reconnect is specifically needed due to an auth error
+  const [reconnectRequired, setReconnectRequired] = useState(false);
+
   const [availabilityDialogOpen, setAvailabilityDialogOpen] = useState(false);
   const [dayOfWeek, setDayOfWeek] = useState(1);
   const [startTime, setStartTime] = useState(null);
@@ -52,28 +61,79 @@ export default function AdvisorMeetingsPage() {
     setErr("");
 
     try {
-      const [rulesRes, pendingRes, upcomingRes, historyRes] = await Promise.all([
+      const [rulesRes, pendingRes, upcomingRes, historyRes, googleRes] = await Promise.all([
         advisorMeetingsApi.getWeeklyAvailability(),
         advisorMeetingsApi.getPendingRequests(),
         advisorMeetingsApi.getUpcoming(),
         advisorMeetingsApi.getHistory(),
+        sharedGoogleAuthApi.getStatus(),
       ]);
 
       setWeeklyAvailability(rulesRes.data || []);
       setPendingRequests(pendingRes.data || []);
-      setUpcomingMeetings(upcomingRes.data || []);
-      setHistoryMeetings(historyRes.data || []);
+      setUpcomingMeetings((upcomingRes.data || []).filter(m => new Date(m.endAt ?? m.startAt) > new Date()));      setHistoryMeetings(historyRes.data || []);
+      setGoogleStatus(googleRes.data || { connected: false, googleEmail: null });
     } catch (e) {
       console.error(e);
-      setErr(e?.response?.data ?? e?.message ?? "Failed to load advisor meetings.");
+      setErr(e?.response?.data?.message ?? e?.response?.data ?? e?.message ?? "Failed to load advisor meetings.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGoogleStatus = async () => {
+    try {
+      const res = await sharedGoogleAuthApi.getStatus();
+      setGoogleStatus(res.data || { connected: false, googleEmail: null });
+    } catch (e) {
+      console.error(e);
     }
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("google_connected") === "1") {
+      setMsg("Google account connected successfully.");
+      setReconnectRequired(false); // clear reconnect flag on successful connect
+      loadGoogleStatus();
+
+      params.delete("google_connected");
+      const newUrl =
+        window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, []);
+
+  const handleConnectGoogle = async () => {
+    try {
+      const res = await sharedGoogleAuthApi.getConnectUrl();
+      const url = res?.data?.url;
+      if (!url) {
+        setErr("Failed to start Google connection.");
+        return;
+      }
+      window.location.href = url;
+    } catch (e) {
+      console.error(e);
+      setErr(e?.response?.data?.message ?? e?.response?.data ?? e?.message ?? "Failed to start Google connection.");
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    try {
+      await sharedGoogleAuthApi.disconnect();
+      setMsg("Google account disconnected.");
+      setReconnectRequired(false); // clear reconnect flag on disconnect
+      await loadGoogleStatus();
+    } catch (e) {
+      console.error(e);
+      setErr(e?.response?.data?.message ?? e?.response?.data ?? e?.message ?? "Failed to disconnect Google account.");
+    }
+  };
 
   const handleCreateAvailability = async () => {
     if (!startTime || !endTime) {
@@ -99,7 +159,7 @@ export default function AdvisorMeetingsPage() {
       await loadData();
     } catch (e) {
       console.error(e);
-      setErr(e?.response?.data ?? e?.message ?? "Failed to create weekly availability.");
+      setErr(e?.response?.data?.message ?? e?.response?.data ?? e?.message ?? "Failed to create weekly availability.");
     } finally {
       setSavingAvailability(false);
     }
@@ -113,7 +173,7 @@ export default function AdvisorMeetingsPage() {
       await loadData();
     } catch (e) {
       console.error(e);
-      setErr(e?.response?.data ?? e?.message ?? "Failed to delete weekly availability.");
+      setErr(e?.response?.data?.message ?? e?.response?.data ?? e?.message ?? "Failed to delete weekly availability.");
     }
   };
 
@@ -148,10 +208,20 @@ export default function AdvisorMeetingsPage() {
       );
 
       setResponseDialogOpen(false);
+      setReconnectRequired(false); // clear reconnect flag on success
       await loadData();
     } catch (e) {
       console.error(e);
-      setErr(e?.response?.data ?? e?.message ?? "Failed to respond to request.");
+      const responseData = e?.response?.data;
+
+      if (responseData?.reconnectRequired) {
+        // Flag that reconnect is needed — the banner will surface the button
+        setReconnectRequired(true);
+        setErr(responseData.message || "Google connection expired. Please reconnect your Google account.");
+        await loadGoogleStatus();
+      } else {
+        setErr(responseData?.message ?? responseData ?? e?.message ?? "Failed to respond to request.");
+      }
     } finally {
       setResponding(false);
     }
@@ -178,6 +248,42 @@ export default function AdvisorMeetingsPage() {
 
       {msg ? <Message severity="success" text={msg} className="mb-4" /> : null}
       {err ? <Message severity="error" text={String(err)} className="mb-4" /> : null}
+
+     {(!googleStatus.connected || reconnectRequired) && (
+  <Card className="meetings-card shadow-sm border-0 mb-4">
+    <div className="meetings-card-header">
+      <div>
+        <div className="fw-semibold fs-4">Google Meet Integration</div>
+        <div className="text-muted mt-1">
+          Connect your Google account so meeting links can be generated when you approve requests.
+        </div>
+      </div>
+
+      <Tag
+        value={googleStatus.connected ? "Connected" : "Not Connected"}
+        severity={googleStatus.connected ? "success" : "danger"}
+        className="meeting-status-tag"
+      />
+    </div>
+
+    <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div className="meeting-advisor-summary">
+        {googleStatus.connected
+          ? "Your Google connection has expired and needs to be re-authorized."
+          : "Google account is not connected or needs to be re-authorized."}
+      </div>
+
+      <div className="d-flex gap-2 flex-wrap">
+        <Button
+          label={reconnectRequired ? "Reconnect Google" : "Connect Google"}
+          icon="pi pi-google"
+          className={reconnectRequired ? "p-button-warning" : undefined}
+          onClick={handleConnectGoogle}
+        />
+      </div>
+    </div>
+  </Card>
+)}
 
       <div className="row g-4 mb-4">
         <CountCard title="Weekly Rules" value={rulesCount} icon="pi pi-calendar-plus" />
@@ -598,19 +704,7 @@ function MeetingCard({ meeting }) {
               {formatTime(meeting.startAt)} - {formatTime(meeting.endAt)}
             </span>
           </div>
-
-          <div className="meeting-reminder-box mt-3">
-            {meeting.meetingLink ? (
-              <a href={meeting.meetingLink} target="_blank" rel="noreferrer">
-                Open Meeting Link
-              </a>
-            ) : (
-              <span className="text-muted">Meeting link not available.</span>
-            )}
-          </div>
         </div>
-
-        <Tag value={meeting.status} severity="info" className="meeting-status-tag" />
       </div>
     </div>
   );

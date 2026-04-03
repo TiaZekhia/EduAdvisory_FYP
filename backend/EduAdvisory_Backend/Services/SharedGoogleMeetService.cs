@@ -1,10 +1,12 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using EduAdvisory_Backend.Interfaces.Services;
 using EduAdvisory_Backend.Models;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Auth.OAuth2.Responses;
 using Microsoft.EntityFrameworkCore;
 
 namespace EduAdvisory_Backend.Services
@@ -14,22 +16,30 @@ namespace EduAdvisory_Backend.Services
         private readonly EduAdvisoryDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
+        private readonly ILogger<SharedGoogleMeetService> _logger;
 
         public SharedGoogleMeetService(
             EduAdvisoryDbContext context,
             IConfiguration configuration,
-            HttpClient httpClient)
+            HttpClient httpClient,
+            ILogger<SharedGoogleMeetService> logger)
         {
             _context = context;
             _configuration = configuration;
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         public async Task<SharedGoogleMeetCreateResult> CreateMeetingSpaceAsync()
         {
             var account = await _context.AppGoogleAccounts.FirstOrDefaultAsync();
+
             if (account == null || string.IsNullOrWhiteSpace(account.RefreshToken))
-                throw new Exception("Shared Google account is not connected.");
+            {
+                throw new SharedGoogleAuthException(
+                    "Google account is not connected.",
+                    reconnectRequired: true);
+            }
 
             var accessToken = await GetValidAccessTokenAsync(account);
 
@@ -43,8 +53,21 @@ namespace EduAdvisory_Backend.Services
             var response = await _httpClient.SendAsync(request);
             var body = await response.Content.ReadAsStringAsync();
 
+            if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                throw new SharedGoogleAuthException(
+                    "Google account authorization is invalid. Please reconnect Google.",
+                    reconnectRequired: true);
+            }
+
             if (!response.IsSuccessStatusCode)
-                throw new Exception($"Google Meet API error: {body}");
+            {
+                _logger.LogError("Google Meet API error. Status={StatusCode}, Body={Body}",
+                    response.StatusCode, body);
+
+                throw new SharedGoogleAuthException(
+                    "Failed to create Google Meet link. Please try again.");
+            }
 
             using var doc = JsonDocument.Parse(body);
             var root = doc.RootElement;
@@ -53,7 +76,10 @@ namespace EduAdvisory_Backend.Services
             var meetingUri = root.GetProperty("meetingUri").GetString() ?? "";
 
             if (string.IsNullOrWhiteSpace(meetingUri))
-                throw new Exception("Google Meet meetingUri was not returned.");
+            {
+                throw new SharedGoogleAuthException(
+                    "Google Meet link was not returned by Google.");
+            }
 
             return new SharedGoogleMeetCreateResult
             {
@@ -74,33 +100,72 @@ namespace EduAdvisory_Backend.Services
             var clientId = _configuration["GoogleOAuth:ClientId"];
             var clientSecret = _configuration["GoogleOAuth:ClientSecret"];
 
-            var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+            if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
             {
-                ClientSecrets = new ClientSecrets
+                throw new SharedGoogleAuthException("Google OAuth configuration is missing.");
+            }
+
+            try
+            {
+                var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
                 {
-                    ClientId = clientId,
-                    ClientSecret = clientSecret
+                    ClientSecrets = new ClientSecrets
+                    {
+                        ClientId = clientId,
+                        ClientSecret = clientSecret
+                    }
+                });
+
+                var refreshed = await flow.RefreshTokenAsync(
+                    "shared-google-account",
+                    account.RefreshToken,
+                    CancellationToken.None);
+
+                if (refreshed == null || string.IsNullOrWhiteSpace(refreshed.AccessToken))
+                {
+                    throw new SharedGoogleAuthException(
+                        "Failed to refresh Google access token.",
+                        reconnectRequired: true);
                 }
-            });
 
-            var refreshed = await flow.RefreshTokenAsync(
-                "shared-google-account",
-                account.RefreshToken,
-                CancellationToken.None);
+                account.AccessToken = refreshed.AccessToken;
+                account.TokenExpiryUtc = DateTimeOffset.UtcNow.AddSeconds(refreshed.ExpiresInSeconds ?? 3600);
+                account.UpdatedAt = DateTimeOffset.UtcNow;
 
-            if (refreshed == null || string.IsNullOrWhiteSpace(refreshed.AccessToken))
-                throw new Exception("Failed to refresh shared Google access token.");
+                if (!string.IsNullOrWhiteSpace(refreshed.RefreshToken))
+                    account.RefreshToken = refreshed.RefreshToken;
 
-            account.AccessToken = refreshed.AccessToken;
-            account.TokenExpiryUtc = DateTimeOffset.UtcNow.AddSeconds(refreshed.ExpiresInSeconds ?? 3600);
-            account.UpdatedAt = DateTimeOffset.UtcNow;
+                await _context.SaveChangesAsync();
 
-            if (!string.IsNullOrWhiteSpace(refreshed.RefreshToken))
-                account.RefreshToken = refreshed.RefreshToken;
+                return account.AccessToken!;
+            }
+            catch (TokenResponseException ex) when (
+                ex.Error != null &&
+                string.Equals(ex.Error.Error, "invalid_grant", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning(ex, "Stored Google refresh token is expired or revoked.");
 
-            await _context.SaveChangesAsync();
+                account.AccessToken = null;
+                account.RefreshToken = null;
+                account.TokenExpiryUtc = null;
+                account.UpdatedAt = DateTimeOffset.UtcNow;
 
-            return account.AccessToken!;
+                await _context.SaveChangesAsync();
+
+                throw new SharedGoogleAuthException(
+                    "Google connection expired or was revoked. Please reconnect Google.",
+                    reconnectRequired: true);
+            }
+            catch (SharedGoogleAuthException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while refreshing shared Google token.");
+                throw new SharedGoogleAuthException(
+                    "Failed to authenticate with Google. Please try again.");
+            }
         }
     }
 }

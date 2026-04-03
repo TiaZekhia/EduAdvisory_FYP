@@ -52,7 +52,7 @@ namespace EduAdvisory_Backend.Controllers
                 string.IsNullOrWhiteSpace(clientSecret) ||
                 string.IsNullOrWhiteSpace(redirectUri))
             {
-                return BadRequest("Google OAuth configuration is missing.");
+                return BadRequest(new { message = "Google OAuth configuration is missing." });
             }
 
             var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
@@ -94,8 +94,10 @@ namespace EduAdvisory_Backend.Controllers
         [HttpGet("callback")]
         public async Task<IActionResult> Callback([FromQuery] string? code, [FromQuery] string? state)
         {
-            _logger.LogInformation("Shared Google callback hit. Code present={HasCode}, State={State}",
-                !string.IsNullOrWhiteSpace(code), state ?? "(null)");
+            _logger.LogInformation(
+                "Shared Google callback hit. Code present={HasCode}, State={State}",
+                !string.IsNullOrWhiteSpace(code),
+                state ?? "(null)");
 
             if (string.IsNullOrWhiteSpace(code))
                 return BadRequest("Missing code.");
@@ -111,7 +113,16 @@ namespace EduAdvisory_Backend.Controllers
             var clientId = _configuration["GoogleOAuth:ClientId"];
             var clientSecret = _configuration["GoogleOAuth:ClientSecret"];
             var redirectUri = _configuration["GoogleOAuth:RedirectUri"];
-            var frontendSuccessUrl = _configuration["GoogleOAuth:FrontendSuccessUrl"] ?? "http://localhost:3000";
+            var frontendSuccessUrl =
+                _configuration["GoogleOAuth:FrontendSuccessUrl"]
+                ?? "http://localhost:3000/advisor/meetings?google_connected=1";
+
+            if (string.IsNullOrWhiteSpace(clientId) ||
+                string.IsNullOrWhiteSpace(clientSecret) ||
+                string.IsNullOrWhiteSpace(redirectUri))
+            {
+                return BadRequest("Google OAuth configuration is missing.");
+            }
 
             var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
@@ -156,6 +167,27 @@ namespace EduAdvisory_Backend.Controllers
             await _context.SaveChangesAsync();
 
             return Redirect(frontendSuccessUrl);
+        }
+
+        [Authorize(Roles = "ADVISOR")]
+        [HttpPost("disconnect")]
+        public async Task<IActionResult> Disconnect()
+        {
+            var account = await _context.AppGoogleAccounts.FirstOrDefaultAsync();
+            if (account == null)
+            {
+                return Ok(new { message = "Google account already disconnected." });
+            }
+
+            account.GoogleEmail = null;
+            account.AccessToken = null;
+            account.RefreshToken = null;
+            account.TokenExpiryUtc = null;
+            account.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Google account disconnected successfully." });
         }
 
         private async Task<string?> TryGetGoogleEmailAsync(string accessToken)
