@@ -1,0 +1,232 @@
+.advisor-risk-page {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.advisor-risk-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.advisor-risk-error {
+  color: #b42318;
+  margin-bottom: 1rem;
+}
+
+.risk-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.risk-stat-card {
+  border-radius: 18px;
+  padding: 1.4rem;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.risk-high {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.risk-medium {
+  background: #fffbeb;
+  color: #ea580c;
+}
+
+.risk-low {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.risk-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.risk-stat-label {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+.advisor-risk-banner {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #e11d48;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.advisor-risk-banner-title {
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.overall-risk-head,
+.course-risk-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.overall-risk-title,
+.course-risk-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.overall-risk-sub,
+.course-risk-sub {
+  color: #667085;
+  margin-top: 0.25rem;
+}
+
+.overall-risk-score-row,
+.course-risk-score-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.risk-progress {
+  height: 0.65rem !important;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.risk-progress .p-progressbar-value {
+  background: #111827 !important;
+}
+
+.risk-progress-high {
+  background: #fee2e2 !important;
+}
+
+.risk-progress-medium {
+  background: #ffedd5 !important;
+}
+
+.risk-progress-low {
+  background: #dcfce7 !important;
+}
+
+.section-mini-title {
+  margin: 1rem 0 0.75rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.overall-reasons ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #475467;
+}
+
+.overall-factors-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.factor-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: center;
+  background: white;
+}
+
+.factor-box-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.factor-box-title {
+  font-size: 0.85rem;
+  color: #667085;
+  margin-top: 0.35rem;
+}
+
+.overall-factors-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+  color: #475467;
+  font-size: 0.95rem;
+}
+
+.overall-recommendation,
+.course-recommendation {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #e5e7eb;
+  color: #111827;
+}
+
+.risk-alerts-list,
+.course-factor-list,
+.course-components-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.risk-alert-item,
+.course-factor-item,
+.course-component-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+}
+
+.risk-alert-title,
+.course-factor-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.risk-alert-message,
+.course-factor-detail {
+  color: #667085;
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+}
+
+.course-risk-empty {
+  color: #667085;
+  padding: 0.5rem 0;
+}
+
+@media (max-width: 992px) {
+  .risk-summary-grid,
+  .overall-factors-grid,
+  .overall-factors-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .overall-risk-head,
+  .course-risk-head,
+  .risk-alert-item,
+  .course-factor-item,
+  .course-component-item {
+    flex-direction: column;
+  }
+}

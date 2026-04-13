@@ -20,7 +20,6 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         StudentStatsDto GetStudentStats(int studentId);
         DegreeProgressDto GetDegreeProgress(int studentId);
         int GetUpcomingMeetingsCount(int studentId);
-        StudentAlertsResponseDto GetStudentAlerts(int studentId);
         ProgressSummaryDto GetProgressSummary(int studentId);
         List<DepartmentCreditsDto> GetProgressDepartments(int studentId);
         List<SemesterHistoryDto> GetProgressHistory(int studentId);
@@ -39,5 +38,6 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         List<StudentMeetingDto> GetUpcomingMeetings(int studentId, int limit = 3);
         List<StudentMeetingDto> GetPastMeetings(int studentId, int limit = 10);
         StudentAdvisorDto? GetStudentAdvisor(int studentId);
+        Dictionary<string, List<CourseGradingSchemaDto>> GetCourseGradingSchema(List<string> courseCodes);
     }
 }
