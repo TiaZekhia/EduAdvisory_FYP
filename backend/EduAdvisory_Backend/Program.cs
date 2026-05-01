@@ -1,7 +1,5 @@
 using EduAdvisory_Backend.Extensions;
-using EduAdvisory_Backend.Interfaces.Services;
 using EduAdvisory_Backend.Middleware;
-using EduAdvisory_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

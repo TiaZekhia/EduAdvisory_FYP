@@ -22,8 +22,10 @@ namespace EduAdvisory_Backend.Extensions
             services.AddScoped<ICoursePrerequisiteRepository, CoursePrerequisiteRepository>();
             services.AddScoped<IAdvisorRepository, AdvisorRepository>();
             services.AddScoped<ICoursePlanService, CoursePlanService>();
+            services.AddScoped<IStudentRiskAssessmentService, StudentRiskAssessmentService>();
             services.AddHttpClient<ICoursePlanAiService, CoursePlanAiService>();
             services.AddHttpClient<ISharedGoogleMeetService, SharedGoogleMeetService>();
+
 
             return services;
         }

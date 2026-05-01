@@ -1,6 +1,5 @@
 import { NavLink } from "react-router-dom";
 import { Badge } from "primereact/badge";
-// import { useAlertsCount } from "../../features/student/alerts/hooks/useAlertsCount";
 
 const navItems = [
   { to: "/student/dashboard", label: "Dashboard", icon: "pi pi-home" },
@@ -14,8 +13,6 @@ const navItems = [
 
 export default function StudentSidebarContent({ onNavigate, alertsCount }) {
 
-  // Replace with real hook:
-  // const { alertsCount } = useAlertsCount();
 
   return (
     <div className="d-flex flex-column h-100 p-3 w-100">
