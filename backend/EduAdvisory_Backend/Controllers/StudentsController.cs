@@ -16,15 +16,18 @@ namespace EduAdvisory_Backend.Controllers
     {
         private readonly IStudentRepository _studentRepo;
         private readonly ICoursePlanService _coursePlanService;
+        private readonly IStudentRiskAssessmentService _riskService;
         private readonly ILogger<StudentsController> _logger;
 
         public StudentsController(
             IStudentRepository studentRepo,
             ICoursePlanService coursePlanService,
+            IStudentRiskAssessmentService riskService,
             ILogger<StudentsController> logger)
         {
             _studentRepo = studentRepo;
             _coursePlanService = coursePlanService;
+            _riskService = riskService;
             _logger = logger;
         }
 
@@ -132,7 +135,7 @@ namespace EduAdvisory_Backend.Controllers
         }
 
         [HttpGet("me/alerts")]
-        public IActionResult GetMyAlerts([FromQuery] int limit = 5)
+        public IActionResult GetMyAlerts()
         {
             var username = User.Identity?.Name;
             if (string.IsNullOrEmpty(username))
@@ -142,10 +145,40 @@ namespace EduAdvisory_Backend.Controllers
             if (student == null)
                 return NotFound("Student not linked to this user.");
 
-            var alerts = _studentRepo.GetStudentAlerts(student.StudentId);
+            var alerts = _riskService.GetStudentAlerts(student.StudentId);
             return Ok(alerts);
         }
-       
+
+        [HttpGet("me/alerts/count")]
+        public IActionResult GetMyAlertsCount()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null)
+                return NotFound("Student not linked to this user.");
+
+            var count = _riskService.GetStudentAlertsCount(student.StudentId);
+            return Ok(count);
+        }
+
+        [HttpGet("me/risk-assessment")]
+        public IActionResult GetMyRiskAssessment()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var student = _studentRepo.GetByUsername(username);
+            if (student == null)
+                return NotFound("Student not linked to this user.");
+
+            var result = _riskService.AssessStudent(student.StudentId);
+            return Ok(result);
+        }
+
         [HttpGet("me/progress/summary")]
         public IActionResult GetMyProgressSummary()
         {
