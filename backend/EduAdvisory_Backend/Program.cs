@@ -5,9 +5,6 @@ using EduAdvisory_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<ICoursePlanService, CoursePlanService>();
-builder.Services.AddHttpClient<ICoursePlanAiService, CoursePlanAiService>();
-
 // Configure services
 builder.Services.AddCorsConfiguration();
 builder.Services.AddKeycloakAuthentication(builder.Configuration);

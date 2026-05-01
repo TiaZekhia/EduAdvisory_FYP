@@ -4,20 +4,21 @@ import StudentSidebarContent from "../../shared/components/StudentSidebarContent
 import StudentNavbar from "./StudentNavbar";
 import { useAuth } from "../providers/AuthProvider";
 import { useStudentSummary } from "../../features/student/context/StudentSummaryProvider";
+import { useStudentAlerts } from "../../features/student/context/StudentAlertsProvider";
 import "./studentLayout.css";
 
 export default function StudentLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true); // default open (change if you want)
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { keycloak } = useAuth();
   const { summary } = useStudentSummary();
+  const { alertsCount } = useStudentAlerts();
 
   const notificationsCount = 3;
-  const alertsCount = 3;
 
   return (
     <div className={`student-shell ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
       <aside className="student-sidebar">
-        <StudentSidebarContent />
+        <StudentSidebarContent alertsCount={alertsCount} />
       </aside>
 
       <div className="student-maincol">

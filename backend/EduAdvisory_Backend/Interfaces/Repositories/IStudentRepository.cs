@@ -20,8 +20,7 @@ namespace EduAdvisory_Backend.Interfaces.Repositories
         StudentStatsDto GetStudentStats(int studentId);
         DegreeProgressDto GetDegreeProgress(int studentId);
         int GetUpcomingMeetingsCount(int studentId);
-        List<StudentAlertDto> GetStudentAlerts(int studentId, int limit = 5);
-        StudentAlertsCountDto GetStudentAlertsCount(int studentId);
+        StudentAlertsResponseDto GetStudentAlerts(int studentId);
         ProgressSummaryDto GetProgressSummary(int studentId);
         List<DepartmentCreditsDto> GetProgressDepartments(int studentId);
         List<SemesterHistoryDto> GetProgressHistory(int studentId);

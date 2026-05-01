@@ -2,7 +2,7 @@ import "./DashboardStatCard.css";
 
 export default function DashboardStatCard({ title, value, icon, className = "" }) {
   return (
-    <div className={`col-12 col-md-4 ${className}`}>
+    <div className={`col-12 col-md-3 ${className}`}>
       <div className="dashboard-stat-card h-100">
         <div className="dashboard-stat-card-top">
           <div className="dashboard-stat-icon">

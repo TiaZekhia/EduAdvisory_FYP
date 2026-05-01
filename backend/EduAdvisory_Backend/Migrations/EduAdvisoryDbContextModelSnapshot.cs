@@ -64,6 +64,86 @@ namespace EduAdvisory_Backend.Migrations
                     b.ToTable("advisor");
                 });
 
+            modelBuilder.Entity("EduAdvisory_Backend.Models.AdvisorAvailability", b =>
+                {
+                    b.Property<int>("AvailabilityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("availability_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AvailabilityId"));
+
+                    b.Property<int>("AdvisorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("advisor_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("EndAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsBooked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_booked");
+
+                    b.Property<DateTimeOffset>("StartAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_at");
+
+                    b.HasKey("AvailabilityId");
+
+                    b.HasIndex("AdvisorId");
+
+                    b.ToTable("advisor_availability");
+                });
+
+            modelBuilder.Entity("EduAdvisory_Backend.Models.AdvisorAvailabilityRule", b =>
+                {
+                    b.Property<int>("RuleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("rule_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RuleId"));
+
+                    b.Property<int>("AdvisorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("advisor_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("integer")
+                        .HasColumnName("day_of_week");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("end_time");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("start_time");
+
+                    b.HasKey("RuleId");
+
+                    b.HasIndex("AdvisorId");
+
+                    b.ToTable("advisor_availability_rule");
+                });
+
             modelBuilder.Entity("EduAdvisory_Backend.Models.Announcement", b =>
                 {
                     b.Property<int>("AnnouncementId")
@@ -98,6 +178,45 @@ namespace EduAdvisory_Backend.Migrations
                     b.HasIndex("AdvisorId");
 
                     b.ToTable("announcement");
+                });
+
+            modelBuilder.Entity("EduAdvisory_Backend.Models.AppGoogleAccount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("text")
+                        .HasColumnName("access_token");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("GoogleEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("google_email");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("text")
+                        .HasColumnName("refresh_token");
+
+                    b.Property<DateTimeOffset?>("TokenExpiryUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("token_expiry_utc");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("app_google_account");
                 });
 
             modelBuilder.Entity("EduAdvisory_Backend.Models.ChatbotHistory", b =>
@@ -233,9 +352,31 @@ namespace EduAdvisory_Backend.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("advisor_id");
 
+                    b.Property<DateTimeOffset?>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<DateTimeOffset>("EndAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_at");
+
+                    b.Property<string>("GoogleSpaceName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("google_space_name");
+
                     b.Property<DateTimeOffset?>("MeetingDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("meeting_date");
+
+                    b.Property<string>("MeetingLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("meeting_link");
 
                     b.Property<string>("MeetingType")
                         .HasMaxLength(20)
@@ -246,9 +387,31 @@ namespace EduAdvisory_Backend.Migrations
                         .HasColumnType("text")
                         .HasColumnName("notes");
 
+                    b.Property<int?>("RequestId")
+                        .HasColumnType("integer")
+                        .HasColumnName("request_id");
+
+                    b.Property<DateTimeOffset>("StartAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_at");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
                     b.Property<int?>("StudentId")
                         .HasColumnType("integer")
                         .HasColumnName("student_id");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("MeetingId")
                         .HasName("meeting_pkey");
@@ -398,6 +561,11 @@ namespace EduAdvisory_Backend.Migrations
                     b.Property<int?>("CurrentSemester")
                         .HasColumnType("integer")
                         .HasColumnName("current_semester");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("email");
 
                     b.Property<string>("FirstName")
                         .HasMaxLength(100)
@@ -623,6 +791,86 @@ namespace EduAdvisory_Backend.Migrations
                     b.ToTable("users");
                 });
 
+            modelBuilder.Entity("MeetingRequest", b =>
+                {
+                    b.Property<int>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("request_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RequestId"));
+
+                    b.Property<int>("AdvisorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("advisor_id");
+
+                    b.Property<DateTimeOffset>("EndAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_at");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<DateTimeOffset?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("responded_at");
+
+                    b.Property<DateTimeOffset>("StartAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("student_id");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("AdvisorId");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("meeting_request");
+                });
+
+            modelBuilder.Entity("EduAdvisory_Backend.Models.AdvisorAvailability", b =>
+                {
+                    b.HasOne("EduAdvisory_Backend.Models.Advisor", "Advisor")
+                        .WithMany()
+                        .HasForeignKey("AdvisorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Advisor");
+                });
+
+            modelBuilder.Entity("EduAdvisory_Backend.Models.AdvisorAvailabilityRule", b =>
+                {
+                    b.HasOne("EduAdvisory_Backend.Models.Advisor", "Advisor")
+                        .WithMany()
+                        .HasForeignKey("AdvisorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Advisor");
+                });
+
             modelBuilder.Entity("EduAdvisory_Backend.Models.Announcement", b =>
                 {
                     b.HasOne("EduAdvisory_Backend.Models.Advisor", "Advisor")
@@ -835,6 +1083,25 @@ namespace EduAdvisory_Backend.Migrations
                     b.Navigation("LinkedAdvisor");
 
                     b.Navigation("LinkedStudent");
+                });
+
+            modelBuilder.Entity("MeetingRequest", b =>
+                {
+                    b.HasOne("EduAdvisory_Backend.Models.Advisor", "Advisor")
+                        .WithMany()
+                        .HasForeignKey("AdvisorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisory_Backend.Models.SisStudent", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Advisor");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("EduAdvisory_Backend.Models.Advisor", b =>

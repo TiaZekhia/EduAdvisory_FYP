@@ -1,0 +1,55 @@
+.advisor-shell {
+  height: 100vh;
+  display: flex;
+  background: #f8f9fa;
+}
+
+.advisor-sidebar {
+  width: 280px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+}
+
+.advisor-main {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  background: #f8f9fa;
+}
+
+.advisor-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.advisor-mobile-sidebar {
+  width: 280px;
+}
+
+.advisor-nav-link {
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.advisor-nav-link.active {
+  background: #111827 !important;
+  color: #ffffff !important;
+}
+
+.advisor-nav-link:not(.active) {
+  color: #111827 !important;
+}
+
+.advisor-nav-link:hover {
+  background: #f3f4f6;
+}

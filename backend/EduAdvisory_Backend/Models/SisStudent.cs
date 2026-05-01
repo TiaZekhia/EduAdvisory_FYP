@@ -36,6 +36,10 @@ public partial class SisStudent
     [StringLength(20)]
     public string? AcademicStatus { get; set; }
 
+    [Column("email")]
+    [StringLength(150)]
+    public string? Email { get; set; }
+
     [Column("advisor_id")]
     public int? AdvisorId { get; set; }
 
