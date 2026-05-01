@@ -4,7 +4,8 @@ import "./NotFoundPage.css";
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
-
+  const role = localStorage.getItem("role");
+  
   return (
     <div className="nf-wrapper">
       <div className="nf-content">
@@ -19,7 +20,7 @@ export default function NotFoundPage() {
 
         <button
           className="nf-btn"
-          onClick={() => navigate("/student/dashboard")}
+          onClick={() => role === "ADVISOR" ? navigate("/advisor/dashboard") : navigate("/advisor/dashboard")}
         >
           GO TO HOMEPAGE
         </button>

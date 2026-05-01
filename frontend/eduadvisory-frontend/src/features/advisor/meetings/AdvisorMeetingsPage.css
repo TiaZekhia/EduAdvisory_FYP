@@ -1,0 +1,143 @@
+@import "../../student/meetings/MeetingsPage.css";
+
+/* Advisor request cards */
+.advisor-request-card {
+  border: 1px solid #f6d88f;
+  border-radius: 22px;
+  padding: 1.15rem;
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.08), transparent 12rem),
+    linear-gradient(180deg, #fffdf8 0%, #ffffff 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.advisor-request-card:hover {
+  transform: translateY(-2px);
+  border-color: #f3c969;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.06), 0 4px 10px rgba(15, 23, 42, 0.03);
+}
+
+.advisor-request-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.advisor-request-name {
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.advisor-request-reason {
+  margin-top: 1rem;
+}
+
+.advisor-request-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.advisor-request-hint {
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* Decision selector */
+.decision-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.decision-option {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e5ebf3;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+  border-radius: 18px;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: inherit;
+}
+
+.decision-option:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
+}
+
+.decision-option i {
+  font-size: 1.15rem;
+  margin-top: 0.15rem;
+  color: #64748b;
+}
+
+.decision-option-title {
+  color: #0f172a;
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.decision-option-text {
+  margin-top: 0.2rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.decision-option.active-accept {
+  border-color: #86efac;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+  box-shadow: 0 12px 24px rgba(34, 197, 94, 0.08);
+}
+
+.decision-option.active-accept i {
+  color: #16a34a;
+}
+
+.decision-option.active-reject {
+  border-color: #fca5a5;
+  background: linear-gradient(180deg, #fff1f2 0%, #ffffff 100%);
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.08);
+}
+
+.decision-option.active-reject i {
+  color: #dc2626;
+}
+
+/* Availability slot variation */
+.slot-booked {
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.08), transparent 12rem),
+    linear-gradient(180deg, #fffef8 0%, #ffffff 100%);
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+  .decision-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .advisor-request-actions {
+    align-items: stretch;
+  }
+
+  .advisor-request-actions .p-button {
+    width: 100%;
+  }
+}

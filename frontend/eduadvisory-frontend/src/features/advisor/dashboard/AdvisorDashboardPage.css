@@ -1,0 +1,190 @@
+.advisor-dashboard-page {
+  background: #f8fafc;
+  min-height: 100%;
+}
+
+.advisor-page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.advisor-page-subtitle {
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.advisor-stat-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 20px;
+  min-height: 132px;
+}
+
+.advisor-stat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.advisor-stat-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.advisor-stat-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.advisor-stat-icon {
+  font-size: 14px;
+}
+
+.advisor-stat-value {
+  margin-top: 28px;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 500;
+  color: #111827;
+}
+
+.advisor-stat-subtitle {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.advisor-section-card {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.advisor-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.advisor-section-subtitle {
+  margin-top: 4px;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.advisor-student-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #fff;
+}
+
+.advisor-student-left {
+  min-width: 0;
+}
+
+.advisor-student-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.advisor-student-name {
+  font-size: 22px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.advisor-student-meta {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.advisor-student-right {
+  text-align: right;
+  min-width: 80px;
+}
+
+.advisor-student-gpa-label {
+  font-size: 13px;
+  color: #111827;
+}
+
+.advisor-student-gpa {
+  margin-top: 4px;
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.gpa-good {
+  color: #16a34a;
+}
+
+.gpa-mid {
+  color: #ca8a04;
+}
+
+.gpa-risk {
+  color: #f97316;
+}
+
+.advisor-activity-row {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+}
+
+.advisor-activity-row.with-border {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.advisor-activity-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #111827;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.advisor-activity-content {
+  flex: 1;
+}
+
+.advisor-activity-title {
+  font-size: 15px;
+  color: #111827;
+}
+
+.advisor-activity-time {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.icon-dark {
+  color: #111827;
+}
+
+.icon-orange {
+  color: #f97316;
+}
+
+.icon-green {
+  color: #16a34a;
+}
+
+.icon-blue {
+  color: #2563eb;
+}
