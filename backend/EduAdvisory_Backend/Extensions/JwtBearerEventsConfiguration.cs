@@ -12,11 +12,19 @@ namespace EduAdvisory_Backend.Extensions
             {
                 OnMessageReceived = context =>
                 {
-                    // Skip authentication for OPTIONS requests (CORS preflight)
                     if (context.Request.Method == "OPTIONS")
                     {
                         context.NoResult();
                         return Task.CompletedTask;
+                    }
+
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        path.StartsWithSegments("/hubs/chat"))
+                    {
+                        context.Token = accessToken;
                     }
 
                     return Task.CompletedTask;

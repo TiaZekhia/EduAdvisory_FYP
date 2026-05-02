@@ -53,6 +53,13 @@ public partial class EduAdvisoryDbContext : DbContext
 
     public DbSet<AdvisorAvailabilityRule> AdvisorAvailabilityRules { get; set; }
 
+    public DbSet<Conversation> Conversations { get; set; }
+
+    public DbSet<ChatMessage> ChatMessages { get; set; }
+
+    public DbSet<BroadcastMessage> BroadcastMessages { get; set; }
+
+    public DbSet<BroadcastRecipient> BroadcastRecipients { get; set; }
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseNpgsql("Host=localhost;Database=eduadvisory_db;Username=postgres;Password=@#$TIze06@#$");
@@ -214,7 +221,90 @@ public partial class EduAdvisoryDbContext : DbContext
 
             entity.HasOne(d => d.LinkedStudent).WithMany(p => p.Users).HasConstraintName("users_linked_student_id_fkey");
         });
+        modelBuilder.Entity<Conversation>(entity =>
+        {
+            entity.HasKey(e => e.ConversationId).HasName("conversation_pkey");
 
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.Advisor)
+                .WithMany()
+                .HasForeignKey(e => e.AdvisorId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("conversation_advisor_id_fkey");
+
+            entity.HasOne(e => e.Student)
+                .WithMany()
+                .HasForeignKey(e => e.StudentId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("conversation_student_id_fkey");
+
+            entity.HasIndex(e => new { e.AdvisorId, e.StudentId })
+                .IsUnique()
+                .HasDatabaseName("conversation_advisor_student_unique");
+        });
+
+        modelBuilder.Entity<ChatMessage>(entity =>
+        {
+            entity.HasKey(e => e.MessageId).HasName("chat_message_pkey");
+
+            entity.Property(e => e.SentAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.IsRead)
+                .HasDefaultValue(false);
+
+            entity.HasOne(e => e.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(e => e.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("chat_message_conversation_id_fkey");
+
+            entity.HasOne(e => e.SenderUser)
+                .WithMany()
+                .HasForeignKey(e => e.SenderUserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("chat_message_sender_user_id_fkey");
+        });
+
+        modelBuilder.Entity<BroadcastMessage>(entity =>
+        {
+            entity.HasKey(e => e.BroadcastMessageId).HasName("broadcast_message_pkey");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.Advisor)
+                .WithMany()
+                .HasForeignKey(e => e.AdvisorId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("broadcast_message_advisor_id_fkey");
+        });
+
+        modelBuilder.Entity<BroadcastRecipient>(entity =>
+        {
+            entity.HasKey(e => e.BroadcastRecipientId).HasName("broadcast_recipient_pkey");
+
+            entity.Property(e => e.IsRead)
+                .HasDefaultValue(false);
+
+            entity.HasOne(e => e.BroadcastMessage)
+                .WithMany(b => b.Recipients)
+                .HasForeignKey(e => e.BroadcastMessageId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("broadcast_recipient_broadcast_message_id_fkey");
+
+            entity.HasOne(e => e.Student)
+                .WithMany()
+                .HasForeignKey(e => e.StudentId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("broadcast_recipient_student_id_fkey");
+
+            entity.HasIndex(e => new { e.BroadcastMessageId, e.StudentId })
+                .IsUnique()
+                .HasDatabaseName("broadcast_recipient_message_student_unique");
+        });
         OnModelCreatingPartial(modelBuilder);
     }
 

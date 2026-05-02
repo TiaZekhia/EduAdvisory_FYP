@@ -4,11 +4,12 @@ import AdvisorLayout from "../layouts/AdvisorLayout";
 import AdvisorDashboardPage from "../../features/advisor/dashboard/AdvisorDashboardPage";
 import AdvisorStudentAnalysisPage from "../../features/advisor/studentAnalysis/AdvisorStudentAnalysisPage";
 import AdvisorMeetingsPage from "../../features/advisor/meetings/AdvisorMeetingsPage";
-import AdvisorMessagesPage from "../../features/advisor/messages/AdvisorMessagesPage";
 import { AdvisorSummaryProvider } from "../../features/advisor/context/AdvisorSummaryProvider";
 import NotFoundPage from "../../shared/pages/NotFoundPage";
 import AdvisorCoursePlanPage from "../../features/advisor/coursePlan/AdvisorCoursePlanPage";
 import AdvisorRiskAssessmentPage from "../../features/advisor/riskAssessment/AdvisorRiskAssessmentPage";
+import AdvisorMessagesPage from "../../features/messages/pages/AdvisorMessagesPage";
+
 
 export const advisorRouter = createBrowserRouter([
   {

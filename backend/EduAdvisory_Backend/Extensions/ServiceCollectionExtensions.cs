@@ -6,6 +6,10 @@ using EduAdvisory_Backend.Interfaces.Services;
 using EduAdvisory_Backend.Services;
 using EduAdvisory_Backend.Interfaces.Repositories;
 using EduAdvisory_Backend.Repositories;
+using EduAdvisory_Backend.Repositories.Messaging;
+using EduAdvisory_Backend.Services.Messaging;
+using EduAdvisory_Backend.SignalR;
+using Microsoft.AspNetCore.SignalR;
 
 namespace EduAdvisory_Backend.Extensions
 {
@@ -25,7 +29,12 @@ namespace EduAdvisory_Backend.Extensions
             services.AddScoped<IStudentRiskAssessmentService, StudentRiskAssessmentService>();
             services.AddHttpClient<ICoursePlanAiService, CoursePlanAiService>();
             services.AddHttpClient<ISharedGoogleMeetService, SharedGoogleMeetService>();
-
+            services.AddScoped<IChatRepository, ChatRepository>();
+            services.AddScoped<IChatService, ChatService>();
+            services.AddSignalR();
+            services.AddSingleton<IUserIdProvider, KeycloakUserIdProvider>();
+            services.AddScoped<IBroadcastRepository, BroadcastRepository>();
+            services.AddScoped<IBroadcastService, BroadcastService>();
 
             return services;
         }
