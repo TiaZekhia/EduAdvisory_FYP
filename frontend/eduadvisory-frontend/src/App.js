@@ -5,6 +5,7 @@ import { AuthProvider } from "./app/providers/AuthProvider";
 import { PrimeReactProvider } from "primereact/api";
 import { useAuth } from "./app/providers/AuthProvider";
 import { useEffect } from "react";
+import "../src/features/messages/pages/messaging.css";
 
 function AppRouterSelector() {
   const { roles } = useAuth();

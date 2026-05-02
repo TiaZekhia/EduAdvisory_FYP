@@ -1,4 +1,5 @@
 using EduAdvisory_Backend.Extensions;
+using EduAdvisory_Backend.Hubs;
 using EduAdvisory_Backend.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,5 +30,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();

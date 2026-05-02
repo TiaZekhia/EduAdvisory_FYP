@@ -1,0 +1,102 @@
+﻿using System.Security.Claims;
+using EduAdvisory_Backend.DTOs.Messages;
+using EduAdvisory_Backend.Services.Messaging;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace EduAdvisory_Backend.Controllers;
+
+[Authorize]
+[ApiController]
+[Route("api/chat")]
+public class ChatController : ControllerBase
+{
+    private readonly IChatService _chatService;
+
+    public ChatController(IChatService chatService)
+    {
+        _chatService = chatService;
+    }
+
+    [HttpGet("conversations")]
+    public async Task<IActionResult> GetMyConversations()
+    {
+        var keycloakId = GetKeycloakId();
+
+        var conversations = await _chatService.GetMyConversationsAsync(keycloakId);
+
+        return Ok(conversations);
+    }
+
+    [HttpPost("conversations/start")]
+    public async Task<IActionResult> StartConversation([FromBody] StartConversationDto dto)
+    {
+        var keycloakId = GetKeycloakId();
+
+        var conversation = await _chatService.StartConversationAsync(keycloakId, dto.StudentId);
+
+        return Ok(conversation);
+    }
+
+    [HttpGet("conversations/{conversationId:int}/messages")]
+    public async Task<IActionResult> GetMessages(int conversationId)
+    {
+        var keycloakId = GetKeycloakId();
+
+        var messages = await _chatService.GetMessagesAsync(keycloakId, conversationId);
+
+        return Ok(messages);
+    }
+
+    [HttpPost("messages")]
+    public async Task<IActionResult> SendMessage([FromBody] SendMessageDto dto)
+    {
+        var keycloakId = GetKeycloakId();
+
+        var message = await _chatService.SendMessageAsync(keycloakId, dto);
+
+        return Ok(message);
+    }
+
+    [HttpPut("conversations/{conversationId:int}/read")]
+    public async Task<IActionResult> MarkAsRead(int conversationId)
+    {
+        var keycloakId = GetKeycloakId();
+
+        await _chatService.MarkAsReadAsync(keycloakId, conversationId);
+
+        return NoContent();
+    }
+
+    [HttpPost("conversations/my-advisor")]
+    public async Task<IActionResult> StartConversationWithMyAdvisor()
+    {
+        var keycloakId = GetKeycloakId();
+
+        var conversation = await _chatService.StartConversationWithMyAdvisorAsync(keycloakId);
+
+        return Ok(conversation);
+    }
+
+    [HttpGet("advisor/students")]
+    public async Task<IActionResult> GetMyAssignedStudents()
+    {
+        var keycloakId = GetKeycloakId();
+
+        var students = await _chatService.GetMyAssignedStudentsAsync(keycloakId);
+
+        return Ok(students);
+    }
+
+
+    private string GetKeycloakId()
+    {
+        var keycloakId = User.FindFirst("sub")?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(keycloakId))
+            throw new UnauthorizedAccessException("Keycloak user id was not found in token.");
+
+        return keycloakId;
+    }
+}

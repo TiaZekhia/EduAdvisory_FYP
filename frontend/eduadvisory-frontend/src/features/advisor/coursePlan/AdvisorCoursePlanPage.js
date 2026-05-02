@@ -135,13 +135,18 @@ export default function AdvisorCoursePlanPage() {
       .finally(() => setAiLoading(false));
   };
 
-  const handleStudentChange = (student) => {
-    setSelectedStudent(student);
-    resetPlanState();
+  const handleStudentChange = (studentId) => {
+  const student = students.find(
+    (s) => String(s.studentId) === String(studentId)
+  );
 
-    if (!student?.studentId) return;
-    loadPlans(student.studentId);
-  };
+  setSelectedStudent(student ?? null);
+  resetPlanState();
+
+  if (!student?.studentId) return;
+
+  loadPlans(student.studentId);
+};
 
   useEffect(() => {
     if (!selectedStudentId) return;
@@ -205,11 +210,11 @@ export default function AdvisorCoursePlanPage() {
           subtitle="Choose a student to generate their course plan"
         >
           <StudentSelector
-            students={students}
-            value={selectedStudent}
-            onChange={handleStudentChange}
-            loading={studentsLoading}
-          />
+  students={students}
+  value={selectedStudentId ?? ""}
+  onChange={handleStudentChange}
+  loading={studentsLoading}
+/>
         </PageSectionCard>
 
         {err ? <div className="p-3 text-danger">{String(err)}</div> : null}

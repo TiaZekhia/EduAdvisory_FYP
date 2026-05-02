@@ -8,7 +8,7 @@ import MyProgressPage from "../../features/student/progress/MyProgressPage";
 import CoursePlanPage from "../../features/student/coursePlan/CoursePlanPage";
 import AlertsPage from "../../features/student/alerts/AlertsPage";
 import MeetingsPage from "../../features/student/meetings/MeetingsPage";
-import MessagesPage from "../../features/student/messages/MessagesPage";
+import StudentMessagesPage from "../../features/messages/pages/StudentMessagesPage";
 import AIAssistantPage from "../../features/student/ai/AIAssistantPage";
 import NotFoundPage from "../../shared/pages/NotFoundPage";
 export const router = createBrowserRouter([
@@ -34,7 +34,7 @@ export const router = createBrowserRouter([
       { path: "course-plan", element: <CoursePlanPage /> },
       { path: "alerts", element: <AlertsPage /> },
       { path: "meetings", element: <MeetingsPage /> },
-      { path: "messages", element: <MessagesPage /> },
+      { path: "messages", element: <StudentMessagesPage /> },
       { path: "ai-assistant", element: <AIAssistantPage /> },
     ],
   },
