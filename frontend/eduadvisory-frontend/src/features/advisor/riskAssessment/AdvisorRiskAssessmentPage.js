@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Tag } from "primereact/tag";
 import { Skeleton } from "primereact/skeleton";
 import { ProgressBar } from "primereact/progressbar";
+import { Button } from "primereact/button";
 
 import { PageHero } from "../../../shared/components/PageHero";
 import PageSectionCard from "../../../shared/components/PageSectionCard";
@@ -10,6 +11,41 @@ import EmptyStateCard from "../../../shared/components/EmptyStateCard";
 import { advisorRiskAssessmentApi } from "../../../services/advisors/advisorRiskAssessmentApi";
 
 import "./advisorRiskAssessmentPage.css";
+
+const COURSES_PER_PAGE = 2;
+
+function CoursePagination({ page, totalPages, setPage }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="d-flex justify-content-center align-items-center gap-1 mt-3 mb-2">
+      <Button
+        icon="pi pi-chevron-left"
+        text
+        size="small"
+        disabled={page === 1}
+        onClick={() => setPage(page - 1)}
+      />
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+        <Button
+          key={p}
+          label={String(p)}
+          size="small"
+          outlined={page !== p}
+          severity="secondary"
+          onClick={() => setPage(p)}
+          style={{ minWidth: "2rem", padding: "0.25rem 0.5rem" }}
+        />
+      ))}
+      <Button
+        icon="pi pi-chevron-right"
+        text
+        size="small"
+        disabled={page === totalPages}
+        onClick={() => setPage(page + 1)}
+      />
+    </div>
+  );
+}
 
 function tagSeverity(level) {
   if (level === "HIGH") return "danger";
@@ -33,18 +69,30 @@ export default function AdvisorRiskAssessmentPage() {
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(true);
 
-  // IMPORTANT: same pattern as AdvisorStudentAnalysisPage
   const [selectedStudentId, setSelectedStudentId] = useState("");
 
   const [risk, setRisk] = useState(null);
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [err, setErr] = useState("");
 
+  const [coursePage, setCoursePage] = useState(1);
+
   const selectedStudent = useMemo(() => {
     return students.find(
       (s) => String(s.studentId) === String(selectedStudentId)
     ) || null;
   }, [students, selectedStudentId]);
+
+  const courseTotalPages = useMemo(() => {
+    const total = risk?.courseAssessments?.length ?? 0;
+    return Math.max(1, Math.ceil(total / COURSES_PER_PAGE));
+  }, [risk]);
+
+  const pagedCourses = useMemo(() => {
+    const courses = risk?.courseAssessments ?? [];
+    const start = (coursePage - 1) * COURSES_PER_PAGE;
+    return courses.slice(start, start + COURSES_PER_PAGE);
+  }, [risk, coursePage]);
 
   useEffect(() => {
     setStudentsLoading(true);
@@ -81,6 +129,7 @@ export default function AdvisorRiskAssessmentPage() {
         setLoadingRisk(true);
         setErr("");
         setRisk(null);
+        setCoursePage(1);
 
         const res = await advisorRiskAssessmentApi.getStudentRiskAssessment(
           selectedStudentId
@@ -279,7 +328,17 @@ export default function AdvisorRiskAssessmentPage() {
             </PageSectionCard>
 
             <div className="course-risk-list">
-              {(risk.courseAssessments || []).map((course, idx) => (
+              {(risk.courseAssessments?.length ?? 0) > COURSES_PER_PAGE && (
+                <div className="d-flex justify-content-between align-items-center mb-2 px-1">
+                  <span className="text-muted small">
+                    Showing courses {(coursePage - 1) * COURSES_PER_PAGE + 1}–
+                    {Math.min(coursePage * COURSES_PER_PAGE, risk.courseAssessments.length)} of{" "}
+                    {risk.courseAssessments.length}
+                  </span>
+                </div>
+              )}
+
+              {pagedCourses.map((course, idx) => (
                 <PageSectionCard
                   key={`${course.courseCode}-${idx}`}
                   className="mb-4"
@@ -353,6 +412,12 @@ export default function AdvisorRiskAssessmentPage() {
                   </div>
                 </PageSectionCard>
               ))}
+
+              <CoursePagination
+                page={coursePage}
+                totalPages={courseTotalPages}
+                setPage={setCoursePage}
+              />
             </div>
           </>
         )}

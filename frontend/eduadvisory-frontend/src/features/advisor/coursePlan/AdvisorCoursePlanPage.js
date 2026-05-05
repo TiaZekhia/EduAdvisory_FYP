@@ -13,6 +13,41 @@ import { exportCoursePlanPdf } from "../../student/coursePlan/exportCoursePlanPd
 
 import "../../student/coursePlan/CoursePlanPage.css";
 
+const SEMESTERS_PER_PAGE = 3;
+
+function SemesterPagination({ page, totalPages, setPage }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="d-flex justify-content-center align-items-center gap-1 mt-3 mb-2">
+      <Button
+        icon="pi pi-chevron-left"
+        text
+        size="small"
+        disabled={page === 1}
+        onClick={() => setPage(page - 1)}
+      />
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+        <Button
+          key={p}
+          label={String(p)}
+          size="small"
+          outlined={page !== p}
+          severity="secondary"
+          onClick={() => setPage(p)}
+          style={{ minWidth: "2rem", padding: "0.25rem 0.5rem" }}
+        />
+      ))}
+      <Button
+        icon="pi pi-chevron-right"
+        text
+        size="small"
+        disabled={page === totalPages}
+        onClick={() => setPage(page + 1)}
+      />
+    </div>
+  );
+}
+
 export default function AdvisorCoursePlanPage() {
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(true);
@@ -28,6 +63,8 @@ export default function AdvisorCoursePlanPage() {
   const [aiLoading, setAiLoading] = useState(false);
 
   const [err, setErr] = useState("");
+
+  const [semPage, setSemPage] = useState(1);
 
   const exportRef = useRef(null);
 
@@ -48,6 +85,22 @@ export default function AdvisorCoursePlanPage() {
     const idx = ordered.findIndex((x) => x.planIndex === selectedPlanIndex);
     return idx >= 0 ? idx + 1 : null;
   }, [insights, selectedPlanIndex]);
+
+  // Reset semester page when plan changes
+  useEffect(() => {
+    setSemPage(1);
+  }, [selectedPlanIndex]);
+
+  const pagedSemesters = useMemo(() => {
+    const semesters = selected?.semesters ?? [];
+    const start = (semPage - 1) * SEMESTERS_PER_PAGE;
+    return semesters.slice(start, start + SEMESTERS_PER_PAGE);
+  }, [selected, semPage]);
+
+  const semTotalPages = useMemo(() => {
+    const total = selected?.semesters?.length ?? 0;
+    return Math.max(1, Math.ceil(total / SEMESTERS_PER_PAGE));
+  }, [selected]);
 
   const selectedStudentId = selectedStudent?.studentId ?? null;
   const selectedStudentName = selectedStudent?.name ?? "Student";
@@ -85,6 +138,7 @@ export default function AdvisorCoursePlanPage() {
     setSelectedPlanIndex(0);
     setPageLoading(false);
     setAiLoading(false);
+    setSemPage(1);
   };
 
   const loadPlans = (studentId) => {
@@ -95,6 +149,7 @@ export default function AdvisorCoursePlanPage() {
     setPlans([]);
     setInsights(null);
     setSelectedPlanIndex(0);
+    setSemPage(1);
 
     advisorCoursePlanApi
       .getPlans(studentId, 3)
@@ -136,17 +191,17 @@ export default function AdvisorCoursePlanPage() {
   };
 
   const handleStudentChange = (studentId) => {
-  const student = students.find(
-    (s) => String(s.studentId) === String(studentId)
-  );
+    const student = students.find(
+      (s) => String(s.studentId) === String(studentId)
+    );
 
-  setSelectedStudent(student ?? null);
-  resetPlanState();
+    setSelectedStudent(student ?? null);
+    resetPlanState();
 
-  if (!student?.studentId) return;
+    if (!student?.studentId) return;
 
-  loadPlans(student.studentId);
-};
+    loadPlans(student.studentId);
+  };
 
   useEffect(() => {
     if (!selectedStudentId) return;
@@ -206,15 +261,16 @@ export default function AdvisorCoursePlanPage() {
         />
 
         <PageSectionCard
+          className="mb-3"
           title="Select Student"
           subtitle="Choose a student to generate their course plan"
         >
           <StudentSelector
-  students={students}
-  value={selectedStudentId ?? ""}
-  onChange={handleStudentChange}
-  loading={studentsLoading}
-/>
+            students={students}
+            value={selectedStudentId ?? ""}
+            onChange={handleStudentChange}
+            loading={studentsLoading}
+          />
         </PageSectionCard>
 
         {err ? <div className="p-3 text-danger">{String(err)}</div> : null}
@@ -229,7 +285,7 @@ export default function AdvisorCoursePlanPage() {
         ) : (
           <>
             {aiLoading && (
-              <Card className="cp-banner-card">
+              <Card className="cp-banner-card mb-3">
                 <div className="cp-banner">
                   <ProgressSpinner
                     style={{ width: "32px", height: "32px" }}
@@ -246,7 +302,7 @@ export default function AdvisorCoursePlanPage() {
             )}
 
             <div ref={exportRef} className="cp-export-area">
-              <Card className="cp-header-card">
+              <Card className="cp-header-card mb-3">
                 <div className="cp-header-top">
                   <div>
                     <div className="cp-title">Academic Roadmap</div>
@@ -323,7 +379,7 @@ export default function AdvisorCoursePlanPage() {
                 </div>
               </Card>
 
-              <Card className="cp-reco-card">
+              <Card className="cp-reco-card mb-3">
                 {aiLoading ? (
                   <div className="cp-ai-skel">
                     <Skeleton width="12rem" height="1.25rem" className="mb-2" />
@@ -347,7 +403,7 @@ export default function AdvisorCoursePlanPage() {
                 )}
               </Card>
 
-              <Card className="cp-insight-card">
+              <Card className="cp-insight-card mb-3">
                 {aiLoading ? (
                   <div className="cp-ai-skel">
                     <Skeleton width="18rem" height="1.25rem" className="mb-2" />
@@ -392,10 +448,21 @@ export default function AdvisorCoursePlanPage() {
               </Card>
 
               <div className="cp-semesters">
-                {selected.semesters?.map((sem, sIdx) => (
+                {/* Semester pagination info */}
+                {(selected.semesters?.length ?? 0) > SEMESTERS_PER_PAGE && (
+                  <div className="d-flex justify-content-between align-items-center mb-2 px-1">
+                    <span className="text-muted small">
+                      Showing semesters {(semPage - 1) * SEMESTERS_PER_PAGE + 1}–
+                      {Math.min(semPage * SEMESTERS_PER_PAGE, selected.semesters.length)} of{" "}
+                      {selected.semesters.length}
+                    </span>
+                  </div>
+                )}
+
+                {pagedSemesters.map((sem, sIdx) => (
                   <Card
                     key={`${sem.plannedSemester}-${sem.termLabel}-${sIdx}`}
-                    className="cp-sem-card"
+                    className="cp-sem-card mb-3"
                   >
                     <div className="cp-sem-head">
                       <div className="cp-sem-left">
@@ -458,6 +525,12 @@ export default function AdvisorCoursePlanPage() {
                     </div>
                   </Card>
                 ))}
+
+                <SemesterPagination
+                  page={semPage}
+                  totalPages={semTotalPages}
+                  setPage={setSemPage}
+                />
               </div>
             </div>
           </>
