@@ -10,6 +10,47 @@ import {
   getAdvisorStudentAnalysis,
 } from "../../../services/advisors/advisorStudentAnalysisApi";
 
+const PAGE_SIZE = 5;
+
+function usePagination(items = []) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const paged = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const reset = () => setPage(1);
+  return { paged, page, setPage, totalPages, reset };
+}
+
+function Pagination({ page, totalPages, setPage }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="d-flex justify-content-center align-items-center gap-1 mt-3">
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        disabled={page === 1}
+        onClick={() => setPage(page - 1)}
+      >
+        ‹
+      </button>
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+        <button
+          key={p}
+          className={`btn btn-sm ${page === p ? "btn-secondary" : "btn-outline-secondary"}`}
+          onClick={() => setPage(p)}
+        >
+          {p}
+        </button>
+      ))}
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        disabled={page === totalPages}
+        onClick={() => setPage(page + 1)}
+      >
+        ›
+      </button>
+    </div>
+  );
+}
+
 export default function AdvisorStudentAnalysisPage() {
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
@@ -17,6 +58,10 @@ export default function AdvisorStudentAnalysisPage() {
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [error, setError] = useState("");
+
+  const enrollmentPag = usePagination(analysis?.currentEnrollment);
+  const failedPag = usePagination(analysis?.failedCourses);
+  const missingPag = usePagination(analysis?.missingCourses);
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -47,6 +92,9 @@ export default function AdvisorStudentAnalysisPage() {
         setError("");
         const data = await getAdvisorStudentAnalysis(selectedStudentId);
         setAnalysis(data);
+        enrollmentPag.reset();
+        failedPag.reset();
+        missingPag.reset();
       } catch (err) {
         setError("Failed to load student analysis.");
       } finally {
@@ -64,7 +112,7 @@ export default function AdvisorStudentAnalysisPage() {
         subtitle="Analyze student progress and compare with study guide requirements"
       />
 
-      <PageSectionCard
+      <PageSectionCard className="mb-3"
         title="Select Student"
         subtitle="Choose a student to analyze their academic progress"
       >
@@ -84,7 +132,7 @@ export default function AdvisorStudentAnalysisPage() {
 
       {!loadingAnalysis && analysis && (
         <>
-          <PageSectionCard>
+          <PageSectionCard className="mb-3">
             <div className="fw-bold fs-5">{analysis.studentName}</div>
             <div className="mt-2">
               is{" "}
@@ -98,7 +146,7 @@ export default function AdvisorStudentAnalysisPage() {
             </div>
           </PageSectionCard>
 
-          <PageSectionCard title="Progress Overview">
+          <PageSectionCard className="mb-3" title="Progress Overview">
             <div className="row g-3">
               <div className="col-12 col-md-3">
                 <strong>Current Semester</strong>
@@ -128,7 +176,7 @@ export default function AdvisorStudentAnalysisPage() {
             </div>
           </PageSectionCard>
 
-          <PageSectionCard
+          <PageSectionCard className="mb-3"
             title="Current Semester Enrollment"
             subtitle="Courses enrolled for this semester"
           >
@@ -139,29 +187,35 @@ export default function AdvisorStudentAnalysisPage() {
                 text="This student is not enrolled in any courses this semester."
               />
             ) : (
-              <div className="d-flex flex-column gap-3">
-                {analysis.currentEnrollment.map((course) => (
-                  <div
-                    key={course.courseCode}
-                    className="border rounded-4 p-3 d-flex justify-content-between align-items-center"
-                  >
-                    <div>
-                      <div className="fw-semibold">
-                        {course.courseCode} - {course.courseName}
+              <>
+                <div className="d-flex flex-column gap-3">
+                  {enrollmentPag.paged.map((course) => (
+                    <div
+                      key={course.courseCode}
+                      className="border rounded-4 p-3 d-flex justify-content-between align-items-center"
+                    >
+                      <div>
+                        <div className="fw-semibold">
+                          {course.courseCode} - {course.courseName}
+                        </div>
+                        <div className="text-muted small">
+                          {course.credits} credits
+                        </div>
                       </div>
-                      <div className="text-muted small">
-                        {course.credits} credits
-                      </div>
+                      <span className="badge text-bg-light">{course.status}</span>
                     </div>
-
-                    <span className="badge text-bg-light">{course.status}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <Pagination
+                  page={enrollmentPag.page}
+                  totalPages={enrollmentPag.totalPages}
+                  setPage={enrollmentPag.setPage}
+                />
+              </>
             )}
           </PageSectionCard>
 
-          <PageSectionCard
+          <PageSectionCard className="mb-3"
             title="Failed Courses"
             subtitle="Courses that need attention"
           >
@@ -172,37 +226,43 @@ export default function AdvisorStudentAnalysisPage() {
                 text="This student does not currently have failed courses requiring attention."
               />
             ) : (
-              <div className="d-flex flex-column gap-3">
-                {analysis.failedCourses.map((course) => (
-                  <div
-                    key={course.courseCode}
-                    className="border border-danger-subtle bg-danger-subtle rounded-4 p-3 d-flex justify-content-between align-items-center"
-                  >
-                    <div>
-                      <div className="fw-semibold">
-                        {course.courseCode} - {course.courseName}
-                      </div>
-                      <div className="text-muted small">
-                        Failed in {course.semester || "previous semester"}
-                      </div>
-                    </div>
-
-                    <span
-                      className={`badge ${
-                        course.retakeStatus === "NOT_RETAKEN"
-                          ? "text-bg-danger"
-                          : "text-bg-warning"
-                      }`}
+              <>
+                <div className="d-flex flex-column gap-3">
+                  {failedPag.paged.map((course) => (
+                    <div
+                      key={course.courseCode}
+                      className="border border-danger-subtle bg-danger-subtle rounded-4 p-3 d-flex justify-content-between align-items-center"
                     >
-                      {course.retakeStatus.replaceAll("_", " ")}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                      <div>
+                        <div className="fw-semibold">
+                          {course.courseCode} - {course.courseName}
+                        </div>
+                        <div className="text-muted small">
+                          Failed in {course.semester || "previous semester"}
+                        </div>
+                      </div>
+                      <span
+                        className={`badge ${
+                          course.retakeStatus === "NOT_RETAKEN"
+                            ? "text-bg-danger"
+                            : "text-bg-warning"
+                        }`}
+                      >
+                        {course.retakeStatus.replaceAll("_", " ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <Pagination
+                  page={failedPag.page}
+                  totalPages={failedPag.totalPages}
+                  setPage={failedPag.setPage}
+                />
+              </>
             )}
           </PageSectionCard>
 
-          <PageSectionCard
+          <PageSectionCard className="mb-3"
             title="Missing Courses"
             subtitle="Courses that should have been taken"
           >
@@ -213,42 +273,48 @@ export default function AdvisorStudentAnalysisPage() {
                 text="This student is currently aligned with the study guide."
               />
             ) : (
-              <div className="d-flex flex-column gap-3">
-                {analysis.missingCourses.map((course) => (
-                  <div
-                    key={course.courseCode}
-                    className="border border-warning-subtle bg-warning-subtle rounded-4 p-3"
-                  >
-                    <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-                      <div>
-                        <div className="fw-semibold">
-                          {course.courseCode} - {course.courseName}
-                        </div>
-                        <div className="text-muted small mt-1">
-                          {course.reason}
-                        </div>
-                        {course.prerequisites?.length > 0 && (
-                          <div className="text-muted small mt-1">
-                            Prerequisites: {course.prerequisites.join(", ")}
+              <>
+                <div className="d-flex flex-column gap-3">
+                  {missingPag.paged.map((course) => (
+                    <div
+                      key={course.courseCode}
+                      className="border border-warning-subtle bg-warning-subtle rounded-4 p-3"
+                    >
+                      <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                        <div>
+                          <div className="fw-semibold">
+                            {course.courseCode} - {course.courseName}
                           </div>
-                        )}
+                          <div className="text-muted small mt-1">
+                            {course.reason}
+                          </div>
+                          {course.prerequisites?.length > 0 && (
+                            <div className="text-muted small mt-1">
+                              Prerequisites: {course.prerequisites.join(", ")}
+                            </div>
+                          )}
+                        </div>
+                        <span
+                          className={`badge ${
+                            course.priority === "HIGH"
+                              ? "text-bg-danger"
+                              : course.priority === "MEDIUM"
+                              ? "text-bg-dark"
+                              : "text-bg-secondary"
+                          }`}
+                        >
+                          {course.priority} PRIORITY
+                        </span>
                       </div>
-
-                      <span
-                        className={`badge ${
-                          course.priority === "HIGH"
-                            ? "text-bg-danger"
-                            : course.priority === "MEDIUM"
-                            ? "text-bg-dark"
-                            : "text-bg-secondary"
-                        }`}
-                      >
-                        {course.priority} PRIORITY
-                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <Pagination
+                  page={missingPag.page}
+                  totalPages={missingPag.totalPages}
+                  setPage={missingPag.setPage}
+                />
+              </>
             )}
           </PageSectionCard>
         </>
