@@ -30,4 +30,6 @@ public class ChatMessage
 
     [ForeignKey(nameof(SenderUserId))]
     public User SenderUser { get; set; } = null!;
+
+    public ICollection<MessageAttachment> Attachments { get; set; } = new List<MessageAttachment>();
 }

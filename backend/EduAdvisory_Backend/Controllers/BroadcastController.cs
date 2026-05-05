@@ -19,7 +19,8 @@ public class BroadcastController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateBroadcast([FromBody] CreateBroadcastDto dto)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> CreateBroadcast([FromForm] CreateBroadcastDto dto)
     {
         var keycloakId = GetKeycloakId();
 
@@ -47,6 +48,7 @@ public class BroadcastController : ControllerBase
 
         return NoContent();
     }
+
 
     private string GetKeycloakId()
     {

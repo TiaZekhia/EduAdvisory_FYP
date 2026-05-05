@@ -60,6 +60,11 @@ public partial class EduAdvisoryDbContext : DbContext
     public DbSet<BroadcastMessage> BroadcastMessages { get; set; }
 
     public DbSet<BroadcastRecipient> BroadcastRecipients { get; set; }
+
+    public DbSet<MessageAttachment> MessageAttachments { get; set; }
+
+    public DbSet<BroadcastAttachment> BroadcastAttachments { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseNpgsql("Host=localhost;Database=eduadvisory_db;Username=postgres;Password=@#$TIze06@#$");
@@ -304,6 +309,34 @@ public partial class EduAdvisoryDbContext : DbContext
             entity.HasIndex(e => new { e.BroadcastMessageId, e.StudentId })
                 .IsUnique()
                 .HasDatabaseName("broadcast_recipient_message_student_unique");
+        });
+
+        modelBuilder.Entity<MessageAttachment>(entity =>
+        {
+            entity.HasKey(e => e.AttachmentId).HasName("message_attachment_pkey");
+
+            entity.Property(e => e.UploadedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.Message)
+                .WithMany(m => m.Attachments)
+                .HasForeignKey(e => e.MessageId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("message_attachment_message_id_fkey");
+        });
+
+        modelBuilder.Entity<BroadcastAttachment>(entity =>
+        {
+            entity.HasKey(e => e.AttachmentId).HasName("broadcast_attachment_pkey");
+
+            entity.Property(e => e.UploadedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.BroadcastMessage)
+                .WithMany(b => b.Attachments)
+                .HasForeignKey(e => e.BroadcastMessageId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("broadcast_attachment_message_id_fkey");
         });
         OnModelCreatingPartial(modelBuilder);
     }

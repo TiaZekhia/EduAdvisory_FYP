@@ -7,4 +7,6 @@ public class AdvisorStudentDto
     public string? Email { get; set; }
     public string? ProgramCode { get; set; }
     public int? CurrentSemester { get; set; }
+    public int UnreadCount { get; set; }
+
 }

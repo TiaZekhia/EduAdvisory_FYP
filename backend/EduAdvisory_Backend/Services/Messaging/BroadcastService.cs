@@ -68,10 +68,50 @@ public class BroadcastService : IBroadcastService
         };
 
         var savedBroadcast = await _broadcastRepository.CreateBroadcastAsync(broadcast);
+        if (dto.Files != null && dto.Files.Any())
+        {
+            var uploadFolder = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot",
+                "uploads",
+                "broadcasts"
+            );
+
+            if (!Directory.Exists(uploadFolder))
+                Directory.CreateDirectory(uploadFolder);
+
+            foreach (var file in dto.Files)
+            {
+                ValidateUploadedFile(file);
+
+                var extension = Path.GetExtension(file.FileName);
+                var storedFileName = $"{Guid.NewGuid()}{extension}";
+                var filePath = Path.Combine(uploadFolder, storedFileName);
+
+                using var stream = new FileStream(filePath, FileMode.Create);
+                await file.CopyToAsync(stream);
+
+                var attachment = new BroadcastAttachment
+                {
+                    BroadcastMessageId = savedBroadcast.BroadcastMessageId,
+                    FileName = file.FileName,
+                    StoredFileName = storedFileName,
+                    FileUrl = $"/uploads/broadcasts/{storedFileName}",
+                    ContentType = file.ContentType,
+                    FileSize = file.Length,
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                _context.BroadcastAttachments.Add(attachment);
+            }
+
+            await _context.SaveChangesAsync();
+        }
 
         savedBroadcast = await _context.BroadcastMessages
             .Include(b => b.Advisor)
             .Include(b => b.Recipients)
+            .Include(b => b.Attachments)
             .FirstAsync(b => b.BroadcastMessageId == savedBroadcast.BroadcastMessageId);
 
         var broadcastDto = ToBroadcastDto(savedBroadcast, false, null);
@@ -162,9 +202,9 @@ public class BroadcastService : IBroadcastService
     }
 
     private BroadcastDto ToBroadcastDto(
-        BroadcastMessage broadcast,
-        bool isRead,
-        DateTime? readAt)
+    BroadcastMessage broadcast,
+    bool isRead,
+    DateTime? readAt)
     {
         return new BroadcastDto
         {
@@ -175,7 +215,41 @@ public class BroadcastService : IBroadcastService
             Content = broadcast.Content,
             CreatedAt = broadcast.CreatedAt,
             IsRead = isRead,
-            ReadAt = readAt
+            ReadAt = readAt,
+            Attachments = broadcast.Attachments.Select(a => new BroadcastAttachmentDto
+            {
+                AttachmentId = a.AttachmentId,
+                FileName = a.FileName,
+                FileUrl = a.FileUrl,
+                ContentType = a.ContentType,
+                FileSize = a.FileSize
+            }).ToList()
         };
+    }
+
+    private void ValidateUploadedFile(IFormFile file)
+    {
+        var allowedTypes = new[]
+        {
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain"
+    };
+
+        if (file.Length == 0)
+            throw new Exception("Uploaded file is empty.");
+
+        if (file.Length > 10 * 1024 * 1024)
+            throw new Exception("File size must be less than 10MB.");
+
+        if (!allowedTypes.Contains(file.ContentType))
+            throw new Exception($"File type not allowed: {file.ContentType}");
     }
 }

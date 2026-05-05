@@ -88,6 +88,17 @@ public class ChatController : ControllerBase
         return Ok(students);
     }
 
+    [HttpPost("messages/with-files")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> SendMessageWithFiles([FromForm] SendMessageWithFileDto dto)
+    {
+        var keycloakId = GetKeycloakId();
+
+        var message = await _chatService.SendMessageWithFilesAsync(keycloakId, dto);
+
+        return Ok(message);
+    }
+
 
     private string GetKeycloakId()
     {

@@ -83,3 +83,28 @@ export async function getAdvisorStudents(token) {
 
   return res.json();
 }
+
+export async function sendMessageWithFiles(token, conversationId, content, files) {
+  const formData = new FormData();
+
+  formData.append("ConversationId", conversationId);
+  formData.append("Content", content || "");
+
+  files
+    .filter((file) => file && file.size > 0)
+    .forEach((file) => {
+      formData.append("Files", file);
+    });
+
+  const res = await fetch(`${API_BASE_URL}/chat/messages/with-files`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) throw new Error("Failed to send message with files");
+
+  return res.json();
+}

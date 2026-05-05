@@ -25,6 +25,7 @@ public class BroadcastRepository : IBroadcastRepository
         return await _context.BroadcastMessages
             .Include(b => b.Advisor)
             .Include(b => b.Recipients)
+            .Include(b => b.Attachments)
             .Where(b => b.AdvisorId == advisorId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -35,6 +36,8 @@ public class BroadcastRepository : IBroadcastRepository
         return await _context.BroadcastRecipients
             .Include(r => r.BroadcastMessage)
                 .ThenInclude(b => b.Advisor)
+            .Include(r => r.BroadcastMessage)
+                .ThenInclude(b => b.Attachments)
             .Where(r => r.StudentId == studentId)
             .OrderByDescending(r => r.BroadcastMessage.CreatedAt)
             .ToListAsync();
