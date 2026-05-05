@@ -16,5 +16,7 @@ public class BroadcastDto
 
     public bool IsRead { get; set; }
 
+    public List<BroadcastAttachmentDto> Attachments { get; set; } = new();
+
     public DateTime? ReadAt { get; set; }
 }

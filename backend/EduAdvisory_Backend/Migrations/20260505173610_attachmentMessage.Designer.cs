@@ -3,6 +3,7 @@ using System;
 using EduAdvisory_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EduAdvisory_Backend.Migrations
 {
     [DbContext(typeof(EduAdvisoryDbContext))]
-    partial class EduAdvisoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505173610_attachmentMessage")]
+    partial class attachmentMessage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -217,60 +220,6 @@ namespace EduAdvisory_Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("app_google_account");
-                });
-
-            modelBuilder.Entity("EduAdvisory_Backend.Models.BroadcastAttachment", b =>
-                {
-                    b.Property<int>("AttachmentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("attachment_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AttachmentId"));
-
-                    b.Property<int>("BroadcastMessageId")
-                        .HasColumnType("integer")
-                        .HasColumnName("broadcast_message_id");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("content_type");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("file_name");
-
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint")
-                        .HasColumnName("file_size");
-
-                    b.Property<string>("FileUrl")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("file_url");
-
-                    b.Property<string>("StoredFileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("stored_file_name");
-
-                    b.Property<DateTime>("UploadedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("uploaded_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.HasKey("AttachmentId")
-                        .HasName("broadcast_attachment_pkey");
-
-                    b.HasIndex("BroadcastMessageId");
-
-                    b.ToTable("broadcast_attachment");
                 });
 
             modelBuilder.Entity("EduAdvisory_Backend.Models.BroadcastMessage", b =>
@@ -1145,18 +1094,6 @@ namespace EduAdvisory_Backend.Migrations
                     b.Navigation("Advisor");
                 });
 
-            modelBuilder.Entity("EduAdvisory_Backend.Models.BroadcastAttachment", b =>
-                {
-                    b.HasOne("EduAdvisory_Backend.Models.BroadcastMessage", "BroadcastMessage")
-                        .WithMany("Attachments")
-                        .HasForeignKey("BroadcastMessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("broadcast_attachment_message_id_fkey");
-
-                    b.Navigation("BroadcastMessage");
-                });
-
             modelBuilder.Entity("EduAdvisory_Backend.Models.BroadcastMessage", b =>
                 {
                     b.HasOne("EduAdvisory_Backend.Models.Advisor", "Advisor")
@@ -1480,8 +1417,6 @@ namespace EduAdvisory_Backend.Migrations
 
             modelBuilder.Entity("EduAdvisory_Backend.Models.BroadcastMessage", b =>
                 {
-                    b.Navigation("Attachments");
-
                     b.Navigation("Recipients");
                 });
 

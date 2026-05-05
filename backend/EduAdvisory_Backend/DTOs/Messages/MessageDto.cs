@@ -17,4 +17,6 @@ public class MessageDto
     public bool IsRead { get; set; }
 
     public bool IsMine { get; set; }
+
+    public List<MessageAttachmentDto> Attachments { get; set; } = new();
 }

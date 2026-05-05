@@ -55,10 +55,11 @@ export default function AdvisorMessagesPage() {
             selectedConversationRef &&
             message.conversationId === selectedConversationRef.conversationId
           ) {
+            markConversationAsRead(accessToken, message.conversationId);
             return [...prev, message];
           }
-          return prev;
         });
+        loadStudents(accessToken);
       });
 
       connection.off("MessageSent");
@@ -67,6 +68,16 @@ export default function AdvisorMessagesPage() {
           if (prev.some((m) => m.messageId === message.messageId)) return prev;
           return [...prev, message];
         });
+      });
+      connection.off("MessagesRead");
+      connection.on("MessagesRead", (data) => {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.conversationId === data.conversationId && message.isMine
+              ? { ...message, isRead: true }
+              : message,
+          ),
+        );
       });
     } catch (err) {
       console.error("SignalR connection failed", err);
@@ -82,6 +93,13 @@ export default function AdvisorMessagesPage() {
       const data = await getMessages(token, conversation.conversationId);
       setMessages(data);
       await markConversationAsRead(token, conversation.conversationId);
+      setStudents((prev) =>
+  prev.map((s) =>
+    s.studentId === student.studentId
+      ? { ...s, unreadCount: 0 }
+      : s
+  )
+);
     } catch (err) {
       console.error(err);
       alert("Could not open conversation.");
@@ -89,7 +107,14 @@ export default function AdvisorMessagesPage() {
   }
 
   if (loading) {
-    return <div className="msg-page" style={{ color: "var(--gray-400)", fontSize: 13 }}>Loading students…</div>;
+    return (
+      <div
+        className="msg-page"
+        style={{ color: "var(--gray-400)", fontSize: 13 }}
+      >
+        Loading students…
+      </div>
+    );
   }
 
   return (

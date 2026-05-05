@@ -27,4 +27,7 @@ public class BroadcastMessage
     public Advisor Advisor { get; set; } = null!;
 
     public ICollection<BroadcastRecipient> Recipients { get; set; } = new List<BroadcastRecipient>();
+
+    public ICollection<BroadcastAttachment> Attachments { get; set; } = new List<BroadcastAttachment>();
+
 }

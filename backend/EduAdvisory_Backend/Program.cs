@@ -25,7 +25,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     app.UseRequestLogging(); // Only log requests in development
 }
-
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 

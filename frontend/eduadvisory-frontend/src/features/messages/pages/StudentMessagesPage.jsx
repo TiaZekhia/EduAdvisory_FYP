@@ -58,13 +58,14 @@ export default function StudentMessagesPage() {
       connection.on("ReceiveMessage", (message) => {
         setMessages((prev) => {
           if (prev.some((m) => m.messageId === message.messageId)) return prev;
+
           if (
             selectedConversationRef &&
             message.conversationId === selectedConversationRef.conversationId
           ) {
+            markConversationAsRead(accessToken, message.conversationId);
             return [...prev, message];
           }
-          return prev;
         });
         refreshConversations(accessToken);
       });
@@ -81,6 +82,17 @@ export default function StudentMessagesPage() {
       connection.off("ReceiveBroadcast");
       connection.on("ReceiveBroadcast", (broadcast) => {
         setLiveBroadcast(broadcast);
+      });
+
+      connection.off("MessagesRead");
+      connection.on("MessagesRead", (data) => {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.conversationId === data.conversationId && message.isMine
+              ? { ...message, isRead: true }
+              : message,
+          ),
+        );
       });
     } catch (err) {
       console.error("SignalR connection failed", err);
@@ -100,21 +112,33 @@ export default function StudentMessagesPage() {
     await markConversationAsRead(accessToken, conversation.conversationId);
     setConversations((prev) =>
       prev.map((c) =>
-        c.conversationId === conversation.conversationId ? { ...c, unreadCount: 0 } : c
-      )
+        c.conversationId === conversation.conversationId
+          ? { ...c, unreadCount: 0 }
+          : c,
+      ),
     );
   }
 
   if (loading) {
     return (
-      <div className="msg-page" style={{ color: "var(--gray-400)", fontSize: 13 }}>
+      <div
+        className="msg-page"
+        style={{ color: "var(--gray-400)", fontSize: 13 }}
+      >
         Loading messages…
       </div>
     );
   }
 
   return (
-    <div style={{ position: "relative", height: "calc(100vh - 100px)", overflow: "hidden", borderRadius: "var(--radius-lg)" }}>
+    <div
+      style={{
+        position: "relative",
+        height: "calc(100vh - 100px)",
+        overflow: "hidden",
+        borderRadius: "var(--radius-lg)",
+      }}
+    >
       <button
         className="broadcast-toggle-btn"
         onClick={() => setBroadcastOpen(true)}
@@ -122,7 +146,9 @@ export default function StudentMessagesPage() {
       >
         Broadcasts
         {unreadBroadcasts > 0 && (
-          <span className="badge" style={{ marginLeft: 6 }}>{unreadBroadcasts}</span>
+          <span className="badge" style={{ marginLeft: 6 }}>
+            {unreadBroadcasts}
+          </span>
         )}
       </button>
 
@@ -142,7 +168,10 @@ export default function StudentMessagesPage() {
       </div>
 
       {broadcastOpen && (
-        <div className="broadcast-overlay" onClick={() => setBroadcastOpen(false)} />
+        <div
+          className="broadcast-overlay"
+          onClick={() => setBroadcastOpen(false)}
+        />
       )}
 
       <BroadcastInbox

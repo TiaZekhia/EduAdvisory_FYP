@@ -18,7 +18,9 @@ public class ChatRepository : IChatRepository
             .Include(c => c.Advisor)
             .Include(c => c.Student)
             .Include(c => c.Messages)
-                .ThenInclude(m => m.SenderUser)
+                 .ThenInclude(m => m.SenderUser)
+            .Include(c => c.Messages)
+                 .ThenInclude(m => m.Attachments)
             .FirstOrDefaultAsync(c => c.ConversationId == conversationId);
     }
 
@@ -73,6 +75,7 @@ public class ChatRepository : IChatRepository
     public async Task<List<ChatMessage>> GetMessagesAsync(int conversationId)
     {
         return await _context.ChatMessages
+            .Include(m => m.Attachments)
             .Include(m => m.SenderUser)
             .Where(m => m.ConversationId == conversationId)
             .OrderBy(m => m.SentAt)

@@ -16,5 +16,7 @@ public interface IChatService
 
     Task<List<AdvisorStudentDto>> GetMyAssignedStudentsAsync(string keycloakId);
 
+    Task<MessageDto> SendMessageWithFilesAsync(string keycloakId, SendMessageWithFileDto dto);
+
     Task MarkAsReadAsync(string keycloakId, int conversationId);
 }

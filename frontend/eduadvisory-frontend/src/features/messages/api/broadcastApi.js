@@ -17,15 +17,26 @@ export async function getBroadcasts(token) {
   return res.json();
 }
 
-export async function createBroadcast(token, title, content, studentIds = []) {
+export async function createBroadcast(token, title, content, studentIds = [], files = []) {
+  const formData = new FormData();
+
+  formData.append("title", title);
+  formData.append("content", content);
+
+  studentIds.forEach((id) => {
+    formData.append("studentIds", id);
+  });
+
+  files.forEach((file) => {
+    formData.append("files", file);
+  });
+
   const res = await fetch(`${API_BASE_URL}/broadcasts`, {
     method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify({
-      title,
-      content,
-      studentIds,
-    }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
   });
 
   if (!res.ok) throw new Error("Failed to create broadcast");

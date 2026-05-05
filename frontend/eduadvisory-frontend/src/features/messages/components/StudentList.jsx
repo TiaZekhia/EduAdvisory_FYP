@@ -29,21 +29,29 @@ export default function StudentList({ students, selectedStudentId, onSelectStude
 
         {filteredStudents.map((student) => (
           <button
-            key={student.studentId}
-            className={`sidebar-item ${
-              selectedStudentId === student.studentId ? "sidebar-item--active" : ""
-            }`}
-            onClick={() => onSelectStudent(student)}
-          >
-            <span className="sidebar-item__name">{student.fullName}</span>
-            <span className="sidebar-item__sub">
-              {student.programCode || "No program"}
-              {student.currentSemester ? ` · Semester ${student.currentSemester}` : ""}
-            </span>
-            {student.email && (
-              <span className="sidebar-item__preview">{student.email}</span>
-            )}
-          </button>
+  key={student.studentId}
+  className={`sidebar-item ${
+    selectedStudentId === student.studentId ? "sidebar-item--active" : ""
+  }`}
+  onClick={() => onSelectStudent(student)}
+>
+  <div className="sidebar-item__row">
+    <span className="sidebar-item__name">{student.fullName}</span>
+
+    {student.unreadCount > 0 && (
+      <span className="badge">{student.unreadCount}</span>
+    )}
+  </div>
+
+  <span className="sidebar-item__sub">
+    {student.programCode || "No program"}
+    {student.currentSemester ? ` · Semester ${student.currentSemester}` : ""}
+  </span>
+
+  {student.email && (
+    <span className="sidebar-item__preview">{student.email}</span>
+  )}
+</button>
         ))}
       </div>
     </div>

@@ -170,6 +170,18 @@ public class ChatService : IChatService
         ValidateConversationAccess(user, conversation);
 
         await _chatRepository.MarkMessagesAsReadAsync(conversationId, user.UserId);
+
+        var senderUser = await GetReceiverUserAsync(user, conversation);
+
+        if (senderUser != null)
+        {
+            await _hubContext.Clients.User(senderUser.KeycloakId!)
+                .SendAsync("MessagesRead", new
+                {
+                    ConversationId = conversationId,
+                    ReaderUserId = user.UserId
+                });
+        }
     }
 
     private async Task<User> GetCurrentUserAsync(string keycloakId)
@@ -246,9 +258,101 @@ public class ChatService : IChatService
                 FullName = ((s.FirstName ?? "") + " " + (s.LastName ?? "")).Trim(),
                 Email = s.Email,
                 ProgramCode = s.ProgramCode,
-                CurrentSemester = s.CurrentSemester
+                CurrentSemester = s.CurrentSemester,
+
+                UnreadCount = _context.ChatMessages.Count(m =>
+                    m.Conversation.StudentId == s.StudentId &&
+                    m.Conversation.AdvisorId == user.LinkedAdvisorId.Value &&
+                    m.SenderUser.LinkedStudentId == s.StudentId &&
+                    !m.IsRead)
             })
             .ToListAsync();
+    }
+
+    public async Task<MessageDto> SendMessageWithFilesAsync(string keycloakId, SendMessageWithFileDto dto)
+    {
+        var user = await GetCurrentUserAsync(keycloakId);
+
+        var conversation = await _chatRepository.GetConversationByIdAsync(dto.ConversationId);
+
+        if (conversation == null)
+            throw new Exception("Conversation not found.");
+
+        ValidateConversationAccess(user, conversation);
+
+        var hasText = !string.IsNullOrWhiteSpace(dto.Content);
+        var hasFiles = dto.Files != null && dto.Files.Any();
+
+        if (!hasText && !hasFiles)
+            throw new Exception("Message must contain text or at least one file.");
+
+        var message = new ChatMessage
+        {
+            ConversationId = dto.ConversationId,
+            SenderUserId = user.UserId,
+            Content = dto.Content?.Trim() ?? "",
+            SentAt = DateTime.UtcNow,
+            IsRead = false
+        };
+
+        var savedMessage = await _chatRepository.AddMessageAsync(message);
+
+        if (hasFiles)
+        {
+            var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "messages");
+
+            if (!Directory.Exists(uploadFolder))
+                Directory.CreateDirectory(uploadFolder);
+
+            foreach (var file in dto.Files!)
+            {
+                ValidateUploadedFile(file);
+
+                var extension = Path.GetExtension(file.FileName);
+                var storedFileName = $"{Guid.NewGuid()}{extension}";
+                var filePath = Path.Combine(uploadFolder, storedFileName);
+
+                using var stream = new FileStream(filePath, FileMode.Create);
+                await file.CopyToAsync(stream);
+
+                var attachment = new MessageAttachment
+                {
+                    MessageId = savedMessage.MessageId,
+                    FileName = file.FileName,
+                    StoredFileName = storedFileName,
+                    FileUrl = $"/uploads/messages/{storedFileName}",
+                    ContentType = file.ContentType,
+                    FileSize = file.Length,
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                _context.MessageAttachments.Add(attachment);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        savedMessage = await _context.ChatMessages
+            .Include(m => m.SenderUser)
+            .Include(m => m.Attachments)
+            .FirstAsync(m => m.MessageId == savedMessage.MessageId);
+
+        var receiverUser = await GetReceiverUserAsync(user, conversation);
+
+        var senderMessageDto = ToMessageDto(savedMessage, user.UserId);
+
+        if (receiverUser != null)
+        {
+            var receiverMessageDto = ToMessageDto(savedMessage, receiverUser.UserId);
+
+            await _hubContext.Clients.User(receiverUser.KeycloakId!)
+                .SendAsync("ReceiveMessage", receiverMessageDto);
+        }
+
+        await _hubContext.Clients.User(user.KeycloakId!)
+            .SendAsync("MessageSent", senderMessageDto);
+
+        return senderMessageDto;
     }
 
 
@@ -328,7 +432,41 @@ public class ChatService : IChatService
             Content = message.Content,
             SentAt = message.SentAt,
             IsRead = message.IsRead,
-            IsMine = message.SenderUserId == currentUserId
+            IsMine = message.SenderUserId == currentUserId,
+            Attachments = message.Attachments.Select(a => new MessageAttachmentDto
+            {
+                AttachmentId = a.AttachmentId,
+                FileName = a.FileName,
+                FileUrl = a.FileUrl,
+                ContentType = a.ContentType,
+                FileSize = a.FileSize
+            }).ToList()
         };
+    }
+
+    private void ValidateUploadedFile(IFormFile file)
+    {
+        var allowedTypes = new[]
+        {
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain"
+    };
+
+        if (file.Length == 0)
+            throw new Exception("Uploaded file is empty.");
+
+        if (file.Length > 10 * 1024 * 1024)
+            throw new Exception("File size must be less than 10MB.");
+
+        if (!allowedTypes.Contains(file.ContentType))
+            throw new Exception($"File type not allowed: {file.ContentType}");
     }
 }
