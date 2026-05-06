@@ -19,4 +19,8 @@ public interface IChatService
     Task<MessageDto> SendMessageWithFilesAsync(string keycloakId, SendMessageWithFileDto dto);
 
     Task MarkAsReadAsync(string keycloakId, int conversationId);
+
+    Task<MessageDto> EditMessageAsync(string keycloakId, int messageId, EditMessageDto dto);
+
+    Task DeleteMessageAsync(string keycloakId, int messageId);
 }

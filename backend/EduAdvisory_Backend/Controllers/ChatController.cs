@@ -99,6 +99,25 @@ public class ChatController : ControllerBase
         return Ok(message);
     }
 
+    [HttpPut("messages/{messageId:int}")]
+    public async Task<IActionResult> EditMessage(int messageId, [FromBody] EditMessageDto dto)
+    {
+        var keycloakId = GetKeycloakId();
+
+        var message = await _chatService.EditMessageAsync(keycloakId, messageId, dto);
+
+        return Ok(message);
+    }
+
+    [HttpDelete("messages/{messageId:int}")]
+    public async Task<IActionResult> DeleteMessage(int messageId)
+    {
+        var keycloakId = GetKeycloakId();
+
+        await _chatService.DeleteMessageAsync(keycloakId, messageId);
+
+        return NoContent();
+    }
 
     private string GetKeycloakId()
     {

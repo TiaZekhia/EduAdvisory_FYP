@@ -108,3 +108,24 @@ export async function sendMessageWithFiles(token, conversationId, content, files
 
   return res.json();
 }
+
+export async function editMessage(token, messageId, content) {
+  const res = await fetch(`${API_BASE_URL}/chat/messages/${messageId}`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify({ content }),
+  });
+
+  if (!res.ok) throw new Error("Failed to edit message");
+
+  return res.json();
+}
+
+export async function deleteMessage(token, messageId) {
+  const res = await fetch(`${API_BASE_URL}/chat/messages/${messageId}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+
+  if (!res.ok) throw new Error("Failed to delete message");
+}

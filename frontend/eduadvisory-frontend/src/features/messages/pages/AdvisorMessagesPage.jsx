@@ -79,6 +79,24 @@ export default function AdvisorMessagesPage() {
           ),
         );
       });
+      connection.off("MessageEdited");
+      connection.on("MessageEdited", (updatedMessage) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.messageId === updatedMessage.messageId ? updatedMessage : m,
+          ),
+        );
+      });
+      connection.off("MessageDeleted");
+      connection.on("MessageDeleted", (data) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.messageId === data.messageId
+              ? { ...m, isDeleted: true, content: "", attachments: [] }
+              : m,
+          ),
+        );
+      });
     } catch (err) {
       console.error("SignalR connection failed", err);
     }
@@ -94,12 +112,10 @@ export default function AdvisorMessagesPage() {
       setMessages(data);
       await markConversationAsRead(token, conversation.conversationId);
       setStudents((prev) =>
-  prev.map((s) =>
-    s.studentId === student.studentId
-      ? { ...s, unreadCount: 0 }
-      : s
-  )
-);
+        prev.map((s) =>
+          s.studentId === student.studentId ? { ...s, unreadCount: 0 } : s,
+        ),
+      );
     } catch (err) {
       console.error(err);
       alert("Could not open conversation.");

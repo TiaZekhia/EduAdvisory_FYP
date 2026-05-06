@@ -25,6 +25,15 @@ public class ChatMessage
     [Column("is_read")]
     public bool IsRead { get; set; } = false;
 
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
+    [Column("edited_at")]
+    public DateTime? EditedAt { get; set; }
+
     [ForeignKey(nameof(ConversationId))]
     public Conversation Conversation { get; set; } = null!;
 

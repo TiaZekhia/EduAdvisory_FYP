@@ -355,7 +355,95 @@ public class ChatService : IChatService
         return senderMessageDto;
     }
 
+    public async Task<MessageDto> EditMessageAsync(string keycloakId, int messageId, EditMessageDto dto)
+    {
+        var user = await GetCurrentUserAsync(keycloakId);
 
+        var message = await _context.ChatMessages
+            .Include(m => m.SenderUser)
+            .Include(m => m.Attachments)
+            .Include(m => m.Conversation)
+            .FirstOrDefaultAsync(m => m.MessageId == messageId);
+
+        if (message == null)
+            throw new Exception("Message not found.");
+
+        if (message.SenderUserId != user.UserId)
+            throw new Exception("You can only edit your own messages.");
+
+        if (message.IsDeleted)
+            throw new Exception("Deleted messages cannot be edited.");
+
+        if (message.Attachments.Any())
+            throw new Exception("Messages with files cannot be edited.");
+
+        if (string.IsNullOrWhiteSpace(dto.Content))
+            throw new Exception("Message content cannot be empty.");
+
+        message.Content = dto.Content.Trim();
+        message.EditedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        var receiverUser = await GetReceiverUserAsync(user, message.Conversation);
+
+        var senderDto = ToMessageDto(message, user.UserId);
+
+        if (receiverUser != null)
+        {
+            var receiverDto = ToMessageDto(message, receiverUser.UserId);
+
+            await _hubContext.Clients.User(receiverUser.KeycloakId!)
+                .SendAsync("MessageEdited", receiverDto);
+        }
+
+        await _hubContext.Clients.User(user.KeycloakId!)
+            .SendAsync("MessageEdited", senderDto);
+
+        return senderDto;
+    }
+
+    public async Task DeleteMessageAsync(string keycloakId, int messageId)
+    {
+        var user = await GetCurrentUserAsync(keycloakId);
+
+        var message = await _context.ChatMessages
+            .Include(m => m.SenderUser)
+            .Include(m => m.Attachments)
+            .Include(m => m.Conversation)
+            .FirstOrDefaultAsync(m => m.MessageId == messageId);
+
+        if (message == null)
+            throw new Exception("Message not found.");
+
+        if (message.SenderUserId != user.UserId)
+            throw new Exception("You can only delete your own messages.");
+
+        if (message.IsDeleted)
+            return;
+
+        message.IsDeleted = true;
+        message.DeletedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        var receiverUser = await GetReceiverUserAsync(user, message.Conversation);
+
+        var payload = new
+        {
+            MessageId = message.MessageId,
+            ConversationId = message.ConversationId
+        };
+
+        if (receiverUser != null)
+        {
+            await _hubContext.Clients.User(receiverUser.KeycloakId!)
+                .SendAsync("MessageDeleted", payload);
+        }
+
+        await _hubContext.Clients.User(user.KeycloakId!)
+            .SendAsync("MessageDeleted", payload);
+    }
     private void ValidateConversationAccess(User user, Conversation conversation)
     {
         var role = user.Role?.ToLower();
@@ -429,7 +517,10 @@ public class ChatService : IChatService
             ConversationId = message.ConversationId,
             SenderUserId = message.SenderUserId,
             SenderRole = message.SenderUser?.Role ?? "unknown",
-            Content = message.Content,
+            Content = message.IsDeleted ? "" : message.Content,
+            IsDeleted = message.IsDeleted,
+            DeletedAt = message.DeletedAt,
+            EditedAt = message.EditedAt,
             SentAt = message.SentAt,
             IsRead = message.IsRead,
             IsMine = message.SenderUserId == currentUserId,
