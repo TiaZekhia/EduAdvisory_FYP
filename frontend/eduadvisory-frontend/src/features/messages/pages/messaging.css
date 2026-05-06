@@ -306,7 +306,7 @@
 
 .bubble {
   max-width: 68%;
-  padding: 9px 13px;
+  padding: 15px;
   border-radius: 12px;
   font-size: 13px;
   line-height: 1.5;
@@ -846,4 +846,122 @@
 .bubble__ticks--read {
   color: #4fc3f7;
   opacity: 1;
+}
+
+.bubble {
+  position: relative;
+}
+
+.bubble__menu-wrap {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+}
+
+.bubble--mine .bubble__menu-wrap {
+  right: 6px;
+
+}
+
+.bubble__menu-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.65;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.bubble__menu-btn:hover {
+  opacity: 1;
+}
+
+.bubble__menu {
+  position: absolute;
+  top: 20px;
+  right: 0;
+  min-width: 100px;
+  background: #fff;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  z-index: 20;
+  overflow: hidden;
+}
+
+.bubble__menu button {
+  width: 100%;
+  border: none;
+  background: #fff;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--gray-700);
+}
+
+.bubble__menu button:hover {
+  background: var(--gray-50);
+}
+
+.bubble__deleted {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.bubble__edited {
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.bubble__edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bubble__edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.chat-edit-banner {
+  padding: 8px 14px;
+  border-top: var(--border);
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+}
+
+.chat-edit-banner span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 500;
+}
+
+.chat-edit-banner__cancel {
+  border: none;
+  background: transparent;
+  color: var(--brand-dark);
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.bubble__menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bubble__menu button i {
+  font-size: 12px;
+}
+.bubble__attachments{
+  margin-top: 10px;
 }

@@ -18,5 +18,11 @@ public class MessageDto
 
     public bool IsMine { get; set; }
 
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public DateTime? EditedAt { get; set; }
+
     public List<MessageAttachmentDto> Attachments { get; set; } = new();
 }

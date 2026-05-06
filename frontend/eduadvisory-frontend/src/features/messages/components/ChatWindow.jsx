@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Toast } from "primereact/toast";
 import MessageBubble from "./MessageBubble";
-import { sendMessage, sendMessageWithFiles } from "../api/messageApi";
+import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { editMessage, deleteMessage, sendMessage, sendMessageWithFiles } from "../api/messageApi";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -11,6 +12,7 @@ export default function ChatWindow({ token, selectedConversation, messages, setM
   const fileInputRef = useRef(null);
   const toast = useRef(null);
   const messagesRef = useRef(null);
+  const [editingMessage, setEditingMessage] = useState(null);
 
   useEffect(() => {
   const timer = setTimeout(() => {
@@ -62,44 +64,75 @@ export default function ChatWindow({ token, selectedConversation, messages, setM
   }
 
   async function handleSend(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!selectedConversation) return;
+  if (!selectedConversation) return;
 
-    const text = content.trim();
-    const hasFiles = files.length > 0;
+  const text = content.trim();
+  const hasFiles = files.length > 0;
 
-    if (!text && !hasFiles) return;
+  if (!text && !hasFiles) return;
+
+  try {
+    if (editingMessage) {
+      await editMessage(token, editingMessage.messageId, text);
+      setEditingMessage(null);
+      setContent("");
+      return;
+    }
 
     const filesToSend = files;
-
     setContent("");
     setFiles([]);
 
-    try {
-      if (hasFiles) {
-        await sendMessageWithFiles(
-          token,
-          selectedConversation.conversationId,
-          text,
-          filesToSend
-        );
-      } else {
-        await sendMessage(token, selectedConversation.conversationId, text);
-      }
-    } catch (err) {
-      console.error(err);
-      setContent(text);
-      setFiles(filesToSend);
-
-      toast.current?.show({
-        severity: "error",
-        summary: "Message Failed",
-        detail: "Could not send the message.",
-        life: 3500,
-      });
+    if (hasFiles) {
+      await sendMessageWithFiles(
+        token,
+        selectedConversation.conversationId,
+        text,
+        filesToSend
+      );
+    } else {
+      await sendMessage(token, selectedConversation.conversationId, text);
     }
+  } catch (err) {
+    console.error(err);
+    toast.current?.show({
+      severity: "error",
+      summary: "Message Failed",
+      detail: "Could not complete the action.",
+      life: 3500,
+    });
   }
+}
+function handleDeleteMessage(message) {
+  confirmDialog({
+    message: "Delete this message for everyone?",
+    header: "Delete message",
+    icon: "pi pi-trash",
+    acceptLabel: "Yes, delete",
+    rejectLabel: "Cancel",
+    acceptClassName: "p-button-danger",
+    accept: async () => {
+      try {
+        await deleteMessage(token, message.messageId);
+      } catch (err) {
+        console.error(err);
+        toast.current?.show({
+          severity: "error",
+          summary: "Delete failed",
+          detail: "Could not delete the message.",
+          life: 3500,
+        });
+      }
+    },
+  });
+}
+function handleEditMessage(message) {
+  setEditingMessage(message);
+  setContent(message.content || "");
+  setFiles([]);
+}
 
   if (!selectedConversation) {
     return (
@@ -113,15 +146,20 @@ export default function ChatWindow({ token, selectedConversation, messages, setM
   return (
     <div className="chat-window">
       <Toast ref={toast} />
-
+<ConfirmDialog />
       <div className="chat-window__head">
         {selectedConversation.studentName || selectedConversation.advisorName}
       </div>
 
 <div className="chat-window__messages" ref={messagesRef}>
           {messages.map((message) => (
-          <MessageBubble key={message.messageId} message={message} />
-        ))}
+<MessageBubble
+  key={message.messageId}
+  message={message}
+  token={token}
+  onEdit={handleEditMessage}
+  onDelete={handleDeleteMessage}
+/>      ))}
       </div>
 
       {files.length > 0 && (
@@ -163,7 +201,24 @@ export default function ChatWindow({ token, selectedConversation, messages, setM
           })}
         </div>
       )}
+{editingMessage && (
+  <div className="chat-edit-banner">
+    <span>
+      <i className="pi pi-pencil" /> Editing message
+    </span>
 
+    <button
+      type="button"
+      className="chat-edit-banner__cancel"
+      onClick={() => {
+        setEditingMessage(null);
+        setContent("");
+      }}
+    >
+      Cancel
+    </button>
+  </div>
+)}
       <form onSubmit={handleSend} className="chat-window__form">
         <input
           ref={fileInputRef}
@@ -174,13 +229,14 @@ export default function ChatWindow({ token, selectedConversation, messages, setM
           accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
         />
 
-        <button
-          type="button"
-          className="msg-btn msg-btn--outline"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          📎
-        </button>
+       <button
+  type="button"
+  className="msg-btn msg-btn--outline"
+  onClick={() => fileInputRef.current?.click()}
+  disabled={!!editingMessage}
+>
+  <i className="pi pi-paperclip" />
+</button>
 
         <input
           className="msg-input"
@@ -191,8 +247,8 @@ export default function ChatWindow({ token, selectedConversation, messages, setM
         />
 
         <button className="msg-btn" type="submit">
-          Send
-        </button>
+  {editingMessage ? "Save" : "Send"}
+</button>
       </form>
     </div>
   );

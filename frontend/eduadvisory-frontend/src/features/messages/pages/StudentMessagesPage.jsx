@@ -94,6 +94,24 @@ export default function StudentMessagesPage() {
           ),
         );
       });
+      connection.off("MessageEdited");
+      connection.on("MessageEdited", (updatedMessage) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.messageId === updatedMessage.messageId ? updatedMessage : m,
+          ),
+        );
+      });
+      connection.off("MessageDeleted");
+      connection.on("MessageDeleted", (data) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.messageId === data.messageId
+              ? { ...m, isDeleted: true, content: "", attachments: [] }
+              : m,
+          ),
+        );
+      });
     } catch (err) {
       console.error("SignalR connection failed", err);
     }
