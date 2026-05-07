@@ -14,14 +14,22 @@ export default function BroadcastForm({ token }) {
   const [files, setFiles] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [studentSearch, setStudentSearch] = useState("");
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!token) return;
+
     getAdvisorStudents(token)
       .then(setStudents)
       .catch((err) => console.error("Failed to load students", err));
   }, [token]);
+
+  const filteredStudents = students.filter((student) =>
+    `${student.fullName || ""} ${student.programCode || ""} ${student.studentId || ""}`
+      .toLowerCase()
+      .includes(studentSearch.toLowerCase())
+  );
 
   function showFileError(message) {
     toast.current?.show({
@@ -79,8 +87,6 @@ export default function BroadcastForm({ token }) {
 
     if (!title.trim() || !content.trim()) return;
 
-    const filesToSend = files;
-
     try {
       setSending(true);
 
@@ -89,13 +95,14 @@ export default function BroadcastForm({ token }) {
         title.trim(),
         content.trim(),
         selectedStudentIds,
-        filesToSend
+        files
       );
 
       setTitle("");
       setContent("");
       setFiles([]);
       setSelectedStudentIds([]);
+      setStudentSearch("");
 
       toast.current.show({
         severity: "success",
@@ -105,6 +112,7 @@ export default function BroadcastForm({ token }) {
       });
     } catch (err) {
       console.error(err);
+
       toast.current.show({
         severity: "error",
         summary: "Failed to send",
@@ -168,7 +176,10 @@ export default function BroadcastForm({ token }) {
                 const isImage = file.type.startsWith("image/");
 
                 return (
-                  <div className="broadcast-file-card" key={`${file.name}-${index}`}>
+                  <div
+                    className="broadcast-file-card"
+                    key={`${file.name}-${index}`}
+                  >
                     <button
                       type="button"
                       className="broadcast-file-card__remove"
@@ -203,6 +214,7 @@ export default function BroadcastForm({ token }) {
           <div className="student-selector">
             <div className="student-selector__header">
               <span className="student-selector__label">Select students</span>
+
               <div className="student-selector__actions">
                 <button
                   type="button"
@@ -211,6 +223,7 @@ export default function BroadcastForm({ token }) {
                 >
                   Select all
                 </button>
+
                 <button
                   type="button"
                   className="msg-btn msg-btn--outline msg-btn--sm"
@@ -222,12 +235,32 @@ export default function BroadcastForm({ token }) {
             </div>
 
             <div className="student-selector__hint">
-              If none are selected, the broadcast will be sent to all assigned students.
+              If none are selected, the broadcast will be sent to all assigned
+              students.
             </div>
 
-            <div className="student-selector__chips">
-              {students.map((student) => {
+            <input
+              type="text"
+              className="msg-input"
+              placeholder="Search students..."
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}
+            />
+
+            <div
+              className="student-selector__chips"
+              style={{
+                maxHeight: "250px",
+                overflowY: "auto",
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                padding: "0.5rem",
+              }}
+            >
+              {filteredStudents.map((student) => {
                 const selected = selectedStudentIds.includes(student.studentId);
+
                 return (
                   <label
                     key={student.studentId}
@@ -238,16 +271,28 @@ export default function BroadcastForm({ token }) {
                       checked={selected}
                       onChange={() => toggleStudent(student.studentId)}
                     />
+
                     <span>{student.fullName}</span>
+
                     {student.programCode && (
-                      <span style={{ opacity: 0.6 }}>{student.programCode}</span>
+                      <span style={{ opacity: 0.6 }}>
+                        {student.programCode}
+                      </span>
                     )}
                   </label>
                 );
               })}
 
               {students.length === 0 && (
-                <span className="student-selector__hint">No assigned students found.</span>
+                <span className="student-selector__hint">
+                  No assigned students found.
+                </span>
+              )}
+
+              {students.length > 0 && filteredStudents.length === 0 && (
+                <span className="student-selector__hint">
+                  No students match your search.
+                </span>
               )}
             </div>
           </div>
