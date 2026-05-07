@@ -25,4 +25,8 @@
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="wwwroot\uploads\broadcasts\" />
+	  <Folder Include="wwwroot\uploads\messages\" />
+	</ItemGroup>
 </Project>
