@@ -3,8 +3,11 @@ import * as signalR from "@microsoft/signalr";
 let connection = null;
 
 export function createChatConnection(token) {
+  const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5267";
+  const hubUrl = `${apiUrl}/hubs/chat`;
+
   connection = new signalR.HubConnectionBuilder()
-    .withUrl("http://localhost:5267/hubs/chat", {
+    .withUrl(hubUrl, {
       accessTokenFactory: () => token,
     })
     .withAutomaticReconnect()

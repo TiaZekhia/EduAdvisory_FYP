@@ -119,6 +119,16 @@ public class ChatController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("unread-count")]
+    public async Task<IActionResult> GetUnreadMessagesCount()
+    {
+        var keycloakId = GetKeycloakId();
+
+        var count = await _chatService.GetUnreadMessagesCountAsync(keycloakId);
+
+        return Ok(new { unreadMessagesCount = count });
+    }
+
     private string GetKeycloakId()
     {
         var keycloakId = User.FindFirst("sub")?.Value

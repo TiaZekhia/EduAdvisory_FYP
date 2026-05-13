@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAdvisorSummary } from "../../features/advisor/context/AdvisorSummaryProvider";
+import { Badge } from "primereact/badge";
 
 const navItems = [
   { to: "/advisor/dashboard", label: "Dashboard", icon: "pi pi-th-large" },
@@ -10,7 +11,7 @@ const navItems = [
   { to: "/advisor/messages", label: "Messages", icon: "pi pi-envelope" },
 ];
 
-export default function AdvisorSidebarContent({ onNavigate }) {
+export default function AdvisorSidebarContent({ onNavigate,unreadMessagesCount }) {
   const { summary, loading } = useAdvisorSummary();
 
   return (
@@ -40,6 +41,9 @@ export default function AdvisorSidebarContent({ onNavigate }) {
           >
             <i className={item.icon} />
             <span>{item.label}</span>
+            {item.label === "Messages" && unreadMessagesCount > 0 && (
+  <Badge value={unreadMessagesCount} severity="danger" className="ms-auto" />
+)}
           </NavLink>
         ))}
       </div>

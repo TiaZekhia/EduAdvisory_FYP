@@ -10,6 +10,7 @@ import AlertsPage from "../../features/student/alerts/AlertsPage";
 import MeetingsPage from "../../features/student/meetings/MeetingsPage";
 import StudentMessagesPage from "../../features/messages/pages/StudentMessagesPage";
 import AIAssistantPage from "../../features/student/ai/AIAssistantPage";
+import StudentProfilePage from "../../features/student/profile/StudentProfilePage";
 import NotFoundPage from "../../shared/pages/NotFoundPage";
 export const router = createBrowserRouter([
   {
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <DashboardPage /> },
+      { path: "profile", element: <StudentProfilePage /> },
       { path: "progress", element: <MyProgressPage /> },
       { path: "course-plan", element: <CoursePlanPage /> },
       { path: "alerts", element: <AlertsPage /> },

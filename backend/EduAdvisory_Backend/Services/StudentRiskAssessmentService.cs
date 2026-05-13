@@ -234,8 +234,8 @@ namespace EduAdvisory_Backend.Services
                             Severity = componentRisk >= 0.8 ? "HIGH" : componentRisk >= 0.5 ? "MEDIUM" : "LOW",
                             Title = ComponentTitle(component.ComponentName, componentRisk),
                             Detail = weight > 0
-                                ? $"{component.ComponentName} grade: {component.Grade}% • Weight {weight}%"
-                                : $"{component.ComponentName} grade: {component.Grade}%"
+                                ? $"{component.ComponentName} grade: {component.Grade}/100 • Weight {weight}%"
+                                : $"{component.ComponentName} grade: {component.Grade}/100"
                         });
                     }
 

@@ -444,6 +444,31 @@ public class ChatService : IChatService
         await _hubContext.Clients.User(user.KeycloakId!)
             .SendAsync("MessageDeleted", payload);
     }
+
+    public async Task<int> GetUnreadMessagesCountAsync(string keycloakId)
+    {
+        var user = await GetCurrentUserAsync(keycloakId);
+
+        if (user.Role?.ToLower() == "advisor")
+        {
+
+            return await _chatRepository.GetUnreadMessagesCountAsync(
+               user.UserId,
+               user.LinkedAdvisorId.Value,
+               null
+            );
+        }
+
+        if (user.Role?.ToLower() == "student")
+        {
+            return await _chatRepository.GetUnreadMessagesCountAsync(
+               user.UserId,null,
+              user.LinkedStudentId.Value
+            );
+        }
+
+        return 0;
+    }
     private void ValidateConversationAccess(User user, Conversation conversation)
     {
         var role = user.Role?.ToLower();

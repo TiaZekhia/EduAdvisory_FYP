@@ -2,6 +2,7 @@ import { RouterProvider } from "react-router-dom";
 import { router as studentRouter } from "./app/routes/studentRouter";
 import { advisorRouter } from "./app/routes/advisorRouter";
 import { AuthProvider } from "./app/providers/AuthProvider";
+import { MessagesProvider } from "./features/messages/context/MessagesProvider";
 import { PrimeReactProvider } from "primereact/api";
 import { useAuth } from "./app/providers/AuthProvider";
 import { useEffect } from "react";
@@ -25,11 +26,19 @@ function AppRouterSelector() {
   }, [roles]);
 
   if (roles.includes("ADVISOR")) {
-    return <RouterProvider router={advisorRouter} />;
+    return (
+      <MessagesProvider>
+        <RouterProvider router={advisorRouter} />
+      </MessagesProvider>
+    );
   }
 
   if (roles.includes("STUDENT")) {
-    return <RouterProvider router={studentRouter} />;
+    return (
+      <MessagesProvider>
+        <RouterProvider router={studentRouter} />
+      </MessagesProvider>
+    );
   }
 
   return <div className="p-4">Unauthorized role</div>;

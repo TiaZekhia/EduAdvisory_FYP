@@ -10,6 +10,7 @@ import {
 } from "../api/messageApi";
 import { startChatConnection } from "../signalr/chatConnection";
 import { getAccessToken } from "../../../auth/getAccessToken";
+import { useMessages } from "../context/MessagesProvider";
 
 export default function StudentMessagesPage() {
   const [token, setToken] = useState(null);
@@ -21,6 +22,13 @@ export default function StudentMessagesPage() {
   const [loading, setLoading] = useState(true);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [unreadBroadcasts, setUnreadBroadcasts] = useState(0);
+  const { resetUnreadCount, setIsOnMessagesPage } = useMessages();
+
+  useEffect(() => {
+    setIsOnMessagesPage(true);
+    resetUnreadCount();
+    return () => setIsOnMessagesPage(false);
+  }, [setIsOnMessagesPage, resetUnreadCount]);
 
   useEffect(() => {
     getAccessToken()
@@ -54,10 +62,10 @@ export default function StudentMessagesPage() {
     try {
       const connection = await startChatConnection(accessToken);
 
-      connection.off("ReceiveMessage");
+      // Don't use connection.off("ReceiveMessage") - provider needs it
       connection.on("ReceiveMessage", (message) => {
         setMessages((prev) => {
-          if (prev.some((m) => m.messageId === message.messageId)) return prev;
+          if (!prev || prev.some((m) => m.messageId === message.messageId)) return prev || [];
 
           if (
             selectedConversationRef &&
@@ -66,13 +74,15 @@ export default function StudentMessagesPage() {
             markConversationAsRead(accessToken, message.conversationId);
             return [...prev, message];
           }
+          return prev;
         });
         refreshConversations(accessToken);
       });
 
-      connection.off("MessageSent");
+      // Don't use connection.off("MessageSent") - provider needs it
       connection.on("MessageSent", (message) => {
         setMessages((prev) => {
+          if (!prev) return [message];
           if (prev.some((m) => m.messageId === message.messageId)) return prev;
           return [...prev, message];
         });

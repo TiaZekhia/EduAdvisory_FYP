@@ -106,4 +106,28 @@ public class ChatRepository : IChatRepository
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task<int> GetUnreadMessagesCountAsync(
+     int currentUserId,
+     int? advisorId = null,
+     int? studentId = null)
+    {
+        var query = _context.ChatMessages
+            .Where(m =>
+                !m.IsRead &&
+                !m.IsDeleted &&
+                m.SenderUserId != currentUserId);
+
+        if (advisorId.HasValue)
+        {
+            query = query.Where(m => m.Conversation.AdvisorId == advisorId.Value);
+        }
+
+        if (studentId.HasValue)
+        {
+            query = query.Where(m => m.Conversation.StudentId == studentId.Value);
+        }
+
+        return await query.CountAsync();
+    }
 }

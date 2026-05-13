@@ -9,6 +9,7 @@ import NotFoundPage from "../../shared/pages/NotFoundPage";
 import AdvisorCoursePlanPage from "../../features/advisor/coursePlan/AdvisorCoursePlanPage";
 import AdvisorRiskAssessmentPage from "../../features/advisor/riskAssessment/AdvisorRiskAssessmentPage";
 import AdvisorMessagesPage from "../../features/messages/pages/AdvisorMessagesPage";
+import AdvisorProfilePage from "../../features/advisor/profile/AdvisorProfilePage";
 
 
 export const advisorRouter = createBrowserRouter([
@@ -28,6 +29,7 @@ export const advisorRouter = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: "dashboard", element: <AdvisorDashboardPage /> },
+      { path: "profile", element: <AdvisorProfilePage /> },
       { path: "student-analysis", element: <AdvisorStudentAnalysisPage /> },
       { path: "plan-generator", element: <AdvisorCoursePlanPage /> },
       { path: "risk-assessment", element: <AdvisorRiskAssessmentPage /> },
