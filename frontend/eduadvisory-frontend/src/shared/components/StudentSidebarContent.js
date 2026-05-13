@@ -11,7 +11,7 @@ const navItems = [
   { to: "/student/ai-assistant", label: "AI Assistant", icon: "pi pi-comments" },
 ];
 
-export default function StudentSidebarContent({ onNavigate, alertsCount }) {
+export default function StudentSidebarContent({ onNavigate, alertsCount,unreadMessagesCount }) {
 
 
   return (
@@ -45,6 +45,9 @@ export default function StudentSidebarContent({ onNavigate, alertsCount }) {
             {item.label === "Alerts" && (
               <Badge value={alertsCount} severity="danger" className="ms-auto" />
             )}
+            {item.label === "Messages" && unreadMessagesCount > 0 && (
+  <Badge value={unreadMessagesCount} severity="danger" className="ms-auto" />
+)}
           </NavLink>
         ))}
       </div>

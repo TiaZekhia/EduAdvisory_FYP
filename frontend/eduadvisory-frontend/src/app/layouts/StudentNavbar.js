@@ -19,8 +19,7 @@ export default function StudentNavbar({
   const navigate = useNavigate();
 
   const profileItems = [
-    { label: "My Profile", icon: "pi pi-user" },
-    { label: "Settings", icon: "pi pi-cog"},
+    { label: "My Profile", icon: "pi pi-user", command: () => navigate("/student/profile") },
     { separator: true },
     { label: "Logout", icon: "pi pi-sign-out", command: onLogout },
   ];

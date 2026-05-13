@@ -23,4 +23,6 @@ public interface IChatService
     Task<MessageDto> EditMessageAsync(string keycloakId, int messageId, EditMessageDto dto);
 
     Task DeleteMessageAsync(string keycloakId, int messageId);
+
+    Task<int> GetUnreadMessagesCountAsync(string keycloakId);
 }

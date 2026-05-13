@@ -19,4 +19,7 @@ public interface IChatRepository
     Task<ChatMessage> AddMessageAsync(ChatMessage message);
 
     Task MarkMessagesAsReadAsync(int conversationId, int readerUserId);
+
+    Task<int> GetUnreadMessagesCountAsync(int currentUserId, int? advisorId, int? studentId);
+
 }

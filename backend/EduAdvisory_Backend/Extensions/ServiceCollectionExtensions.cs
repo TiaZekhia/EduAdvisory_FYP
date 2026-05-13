@@ -10,6 +10,7 @@ using EduAdvisory_Backend.Repositories.Messaging;
 using EduAdvisory_Backend.Services.Messaging;
 using EduAdvisory_Backend.SignalR;
 using Microsoft.AspNetCore.SignalR;
+using EduAdvisory_Backend.Services.Profile;
 
 namespace EduAdvisory_Backend.Extensions
 {
@@ -35,6 +36,7 @@ namespace EduAdvisory_Backend.Extensions
             services.AddSingleton<IUserIdProvider, KeycloakUserIdProvider>();
             services.AddScoped<IBroadcastRepository, BroadcastRepository>();
             services.AddScoped<IBroadcastService, BroadcastService>();
+            services.AddScoped<IProfileService, ProfileService>();
 
             return services;
         }
