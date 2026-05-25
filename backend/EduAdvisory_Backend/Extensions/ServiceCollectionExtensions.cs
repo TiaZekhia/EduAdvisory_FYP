@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using EduAdvisory_Backend.Models;
@@ -37,6 +39,7 @@ namespace EduAdvisory_Backend.Extensions
             services.AddScoped<IBroadcastRepository, BroadcastRepository>();
             services.AddScoped<IBroadcastService, BroadcastService>();
             services.AddScoped<IProfileService, ProfileService>();
+            services.AddScoped<IRiskAutomationService, RiskAutomationService>();
 
             return services;
         }
@@ -89,11 +92,17 @@ namespace EduAdvisory_Backend.Extensions
                         ValidateAudience = true,
                         ValidAudiences = new[] { audience, "account" },
                         ValidateIssuer = true,
-                        ValidIssuer = authority,
+                        // Accept tokens from both localhost (frontend) and Docker IP (n8n)
+                        ValidIssuers = new[]
+                        {
+                            "http://localhost:8080/realms/EduAdvisory",
+                            "http://172.17.0.1:8080/realms/EduAdvisory"
+                        },
                         ValidateLifetime = true,
                         ClockSkew = TimeSpan.FromMinutes(5),
                         NameClaimType = "preferred_username",
-                        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
+                        // Role claims will be extracted by KeycloakClaimsTransformation
+                        RoleClaimType = ClaimTypes.Role,
                         ValidateIssuerSigningKey = false,
                         RequireSignedTokens = false
                     };
@@ -101,6 +110,7 @@ namespace EduAdvisory_Backend.Extensions
                     options.Events = JwtBearerEventsConfiguration.Configure();
                 });
 
+            services.AddScoped<IClaimsTransformation, KeycloakClaimsTransformation>();
             services.AddAuthorization();
 
             return services;
