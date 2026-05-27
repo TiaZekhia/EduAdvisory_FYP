@@ -3,6 +3,7 @@ using System;
 using EduAdvisory_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EduAdvisory_Backend.Migrations
 {
     [DbContext(typeof(EduAdvisoryDbContext))]
-    partial class EduAdvisoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260515163541_AddUserIsActive")]
+    partial class AddUserIsActive
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -699,62 +702,6 @@ namespace EduAdvisory_Backend.Migrations
                     b.ToTable("message_attachment");
                 });
 
-            modelBuilder.Entity("EduAdvisory_Backend.Models.RiskInterventionLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ActionType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("action_type");
-
-                    b.Property<int>("AdvisorId")
-                        .HasColumnType("integer")
-                        .HasColumnName("advisor_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text")
-                        .HasColumnName("notes");
-
-                    b.Property<string>("RiskLevel")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("risk_level");
-
-                    b.Property<int>("RiskScore")
-                        .HasColumnType("integer")
-                        .HasColumnName("risk_score");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<int>("StudentId")
-                        .HasColumnType("integer")
-                        .HasColumnName("student_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AdvisorId");
-
-                    b.HasIndex("StudentId");
-
-                    b.ToTable("risk_intervention_log");
-                });
-
             modelBuilder.Entity("EduAdvisory_Backend.Models.SisCourse", b =>
                 {
                     b.Property<string>("CourseCode")
@@ -1390,25 +1337,6 @@ namespace EduAdvisory_Backend.Migrations
                         .HasConstraintName("message_attachment_message_id_fkey");
 
                     b.Navigation("Message");
-                });
-
-            modelBuilder.Entity("EduAdvisory_Backend.Models.RiskInterventionLog", b =>
-                {
-                    b.HasOne("EduAdvisory_Backend.Models.Advisor", "Advisor")
-                        .WithMany()
-                        .HasForeignKey("AdvisorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("EduAdvisory_Backend.Models.SisStudent", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Advisor");
-
-                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("EduAdvisory_Backend.Models.SisCourseAssessment", b =>

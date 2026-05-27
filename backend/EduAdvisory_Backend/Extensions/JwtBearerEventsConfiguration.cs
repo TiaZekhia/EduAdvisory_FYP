@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using EduAdvisory_Backend.Models;
 using System.Security.Claims;
 
 namespace EduAdvisory_Backend.Extensions
@@ -58,7 +60,7 @@ namespace EduAdvisory_Backend.Extensions
                     return Task.CompletedTask;
                 },
 
-                OnTokenValidated = context =>
+                OnTokenValidated = async context =>
                 {
                     var logger = context.HttpContext.RequestServices
                         .GetRequiredService<ILogger<Program>>();
@@ -69,15 +71,83 @@ namespace EduAdvisory_Backend.Extensions
                     if (claimsIdentity == null)
                     {
                         logger.LogWarning("ClaimsIdentity is null after token validation");
-                        return Task.CompletedTask;
+                        return;
                     }
 
                     // Extract and add roles from realm_access claim
                     ExtractAndAddRoles(context, claimsIdentity, logger);
 
-                    return Task.CompletedTask;
+                    await ValidateLocalUserAccessAsync(context, claimsIdentity, logger);
+
                 }
             };
+        }
+
+        private static async Task ValidateLocalUserAccessAsync(
+            TokenValidatedContext context,
+            ClaimsIdentity claimsIdentity,
+            ILogger logger)
+        {
+            var roleSet = claimsIdentity.Claims
+                .Where(c => c.Type == ClaimTypes.Role)
+                .Select(c => c.Value.ToUpperInvariant())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (!roleSet.Contains("STUDENT") && !roleSet.Contains("ADVISOR"))
+            {
+                return;
+            }
+
+            var username = context.Principal?.Identity?.Name
+                ?? context.Principal?.FindFirst("preferred_username")?.Value;
+            var keycloakId = context.Principal?.FindFirst("sub")?.Value
+                ?? context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                logger.LogWarning("Validated token is missing preferred username for a managed user.");
+                context.Fail("The authenticated account is missing a username.");
+                return;
+            }
+
+            var dbContext = context.HttpContext.RequestServices
+                .GetRequiredService<EduAdvisoryDbContext>();
+
+            var user = await dbContext.Users.FirstOrDefaultAsync(u =>
+                u.Username == username ||
+                (!string.IsNullOrWhiteSpace(keycloakId) && u.KeycloakId == keycloakId));
+
+            if (user == null)
+            {
+                logger.LogWarning("Blocked login for unregistered managed user {Username}", username);
+                context.Fail("This account has not been activated in EduAdvisory.");
+                return;
+            }
+
+            if (!user.IsActive)
+            {
+                logger.LogWarning("Blocked login for deactivated managed user {Username}", username);
+                context.Fail("This account is deactivated.");
+                return;
+            }
+
+            var localRole = user.Role?.ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(localRole) || !roleSet.Contains(localRole))
+            {
+                logger.LogWarning(
+                    "Blocked login for {Username} because local role {LocalRole} does not match token roles {TokenRoles}",
+                    username,
+                    user.Role,
+                    string.Join(", ", roleSet));
+                context.Fail("This account role is not allowed for the current login.");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(keycloakId) && !string.Equals(user.KeycloakId, keycloakId, StringComparison.Ordinal))
+            {
+                user.KeycloakId = keycloakId;
+                await dbContext.SaveChangesAsync();
+            }
         }
 
         private static void ExtractAndAddRoles(
