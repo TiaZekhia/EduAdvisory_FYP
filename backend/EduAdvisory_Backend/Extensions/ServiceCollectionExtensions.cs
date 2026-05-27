@@ -39,6 +39,7 @@ namespace EduAdvisory_Backend.Extensions
             services.AddScoped<IBroadcastRepository, BroadcastRepository>();
             services.AddScoped<IBroadcastService, BroadcastService>();
             services.AddScoped<IProfileService, ProfileService>();
+            services.AddHttpClient<IAdminUserManagementService, AdminUserManagementService>();
             services.AddScoped<IRiskAutomationService, RiskAutomationService>();
 
             return services;

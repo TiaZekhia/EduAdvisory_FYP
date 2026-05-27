@@ -27,6 +27,9 @@ public partial class User
     [StringLength(20)]
     public string? Role { get; set; }
 
+    [Column("is_active")]
+    public bool IsActive { get; set; } = true;
+
     [Column("linked_student_id")]
     public int? LinkedStudentId { get; set; }
 

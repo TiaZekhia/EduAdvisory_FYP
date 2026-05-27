@@ -224,6 +224,9 @@ public partial class EduAdvisoryDbContext : DbContext
         {
             entity.HasKey(e => e.UserId).HasName("users_pkey");
 
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
+
             entity.HasOne(d => d.LinkedAdvisor).WithMany(p => p.Users).HasConstraintName("users_linked_advisor_id_fkey");
 
             entity.HasOne(d => d.LinkedStudent).WithMany(p => p.Users).HasConstraintName("users_linked_student_id_fkey");
