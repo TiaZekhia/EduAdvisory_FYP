@@ -1,6 +1,7 @@
 import { RouterProvider } from "react-router-dom";
 import { router as studentRouter } from "./app/routes/studentRouter";
 import { advisorRouter } from "./app/routes/advisorRouter";
+import { adminRouter } from "./app/routes/adminRouter";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { MessagesProvider } from "./features/messages/context/MessagesProvider";
 import { PrimeReactProvider } from "primereact/api";
@@ -14,6 +15,11 @@ function AppRouterSelector() {
   useEffect(() => {
     const path = window.location.pathname;
 
+    if (roles.includes("ADMIN") && !path.startsWith("/admin")) {
+      window.history.replaceState({}, "", "/admin/users");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+
     if (roles.includes("ADVISOR") && path.startsWith("/student")) {
       window.history.replaceState({}, "", "/advisor/dashboard");
       window.dispatchEvent(new PopStateEvent("popstate"));
@@ -24,6 +30,10 @@ function AppRouterSelector() {
       window.dispatchEvent(new PopStateEvent("popstate"));
     }
   }, [roles]);
+
+  if (roles.includes("ADMIN")) {
+    return <RouterProvider router={adminRouter} />;
+  }
 
   if (roles.includes("ADVISOR")) {
     return (
