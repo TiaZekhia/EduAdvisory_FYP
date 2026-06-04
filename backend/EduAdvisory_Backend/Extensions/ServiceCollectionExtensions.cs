@@ -13,6 +13,8 @@ using EduAdvisory_Backend.Services.Messaging;
 using EduAdvisory_Backend.SignalR;
 using Microsoft.AspNetCore.SignalR;
 using EduAdvisory_Backend.Services.Profile;
+using EduAdvisory_Backend.Interfaces.Services.AI;
+using EduAdvisory_Backend.Services.AI;
 
 namespace EduAdvisory_Backend.Extensions
 {
@@ -41,6 +43,25 @@ namespace EduAdvisory_Backend.Extensions
             services.AddScoped<IProfileService, ProfileService>();
             services.AddHttpClient<IAdminUserManagementService, AdminUserManagementService>();
             services.AddScoped<IRiskAutomationService, RiskAutomationService>();
+            services.AddOptions<OpenAiOptions>()
+            .BindConfiguration("OpenAI")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.ApiKey), "OpenAI API key is required")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.ChatModel), "OpenAI chat model is required")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.EmbeddingModel), "OpenAI embedding model is required");
+
+            services.AddOptions<AiOptions>()
+                .BindConfiguration("AI");
+
+            services.AddScoped<IEmbeddingService, OpenAiEmbeddingService>();
+            services.AddScoped<IAdminAiDocumentService, AdminAiDocumentService>();
+            services.AddScoped<IPdfTextExtractionService, PdfTextExtractionService>();
+            services.AddScoped<ISemanticChunkingService, SemanticChunkingService>();
+            services.AddScoped<IAiDocumentProcessingService, AiDocumentProcessingService>();
+            services.AddScoped<IVectorSearchService, VectorSearchService>();
+            services.AddScoped<IStudentAiChatService, StudentAiChatService>();
+            services.AddScoped<ICurrentAiStudentContext, CurrentAiStudentContext>();
+            services.AddScoped<IAiKernelService, AiKernelService>();
+            services.AddScoped<ICurrentAiStudentContext, CurrentAiStudentContext>();
 
             return services;
         }
@@ -50,8 +71,11 @@ namespace EduAdvisory_Backend.Extensions
             IConfiguration configuration)
         {
             services.AddDbContext<EduAdvisoryDbContext>(options =>
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"))
-            );
+                 options.UseNpgsql(
+                     configuration.GetConnectionString("DefaultConnection"),
+                     npgsqlOptions => npgsqlOptions.UseVector()
+                 )
+             );
 
             return services;
         }

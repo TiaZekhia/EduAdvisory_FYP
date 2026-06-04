@@ -4,6 +4,8 @@ using EduAdvisory_Backend.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddEnvironmentVariables();
+
 // Configure services
 builder.Services.AddCorsConfiguration();
 builder.Services.AddKeycloakAuthentication(builder.Configuration);
@@ -23,8 +25,9 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseRequestLogging(); // Only log requests in development
+    app.UseRequestLogging();
 }
+
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();

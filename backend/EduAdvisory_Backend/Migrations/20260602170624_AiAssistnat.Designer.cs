@@ -3,6 +3,7 @@ using System;
 using EduAdvisory_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace EduAdvisory_Backend.Migrations
 {
     [DbContext(typeof(EduAdvisoryDbContext))]
-    partial class EduAdvisoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260602170624_AiAssistnat")]
+    partial class AiAssistnat
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -228,12 +231,8 @@ namespace EduAdvisory_Backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DocumentId"));
 
-                    b.Property<string>("AcademicYear")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("academic_year");
-
                     b.Property<string>("CourseCode")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("course_code");
@@ -269,17 +268,6 @@ namespace EduAdvisory_Backend.Migrations
                     b.Property<DateTime?>("ProcessedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
-
-                    b.Property<string>("ProgramCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("program_code");
-
-                    b.Property<string>("Scope")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("scope");
 
                     b.Property<string>("Semester")
                         .HasMaxLength(50)
@@ -320,11 +308,6 @@ namespace EduAdvisory_Backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ChunkId"));
 
-                    b.Property<string>("AcademicYear")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("academic_year");
-
                     b.Property<int>("ChunkIndex")
                         .HasColumnType("integer")
                         .HasColumnName("chunk_index");
@@ -335,6 +318,7 @@ namespace EduAdvisory_Backend.Migrations
                         .HasColumnName("chunk_text");
 
                     b.Property<string>("CourseCode")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("course_code");
@@ -362,17 +346,6 @@ namespace EduAdvisory_Backend.Migrations
                     b.Property<int?>("PageNumber")
                         .HasColumnType("integer")
                         .HasColumnName("page_number");
-
-                    b.Property<string>("ProgramCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("program_code");
-
-                    b.Property<string>("Scope")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("scope");
 
                     b.Property<string>("SectionTitle")
                         .HasMaxLength(255)

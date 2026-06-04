@@ -1,0 +1,28 @@
+﻿namespace EduAdvisory_Backend.Models;
+
+public class RetrievedChunk
+{
+    public int ChunkId { get; set; }
+
+    public int DocumentId { get; set; }
+
+    public string DocumentTitle { get; set; } = string.Empty;
+
+    public string DocumentType { get; set; } = string.Empty;
+
+    public string Scope { get; set; } = "course";
+
+    public string? CourseCode { get; set; }
+
+    public string? ProgramCode { get; set; }
+
+    public string? AcademicYear { get; set; }
+
+    public string? SectionTitle { get; set; }
+
+    public string ChunkText { get; set; } = string.Empty;
+
+    public int? PageNumber { get; set; }
+
+    public double SimilarityScore { get; set; }
+}

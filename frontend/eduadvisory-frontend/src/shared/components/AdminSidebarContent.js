@@ -2,8 +2,8 @@ import { NavLink } from "react-router-dom";
 
 const navItems = [
   { to: "/admin/users", label: "User Management", icon: "pi pi-users" },
+  { to: "/admin/ai-knowledge-base",label: "AI Knowledge Base",icon: "pi pi-database" },
 ];
-
 export default function AdminSidebarContent({ onNavigate }) {
   return (
     <div className="d-flex flex-column h-100 p-3 w-100">
