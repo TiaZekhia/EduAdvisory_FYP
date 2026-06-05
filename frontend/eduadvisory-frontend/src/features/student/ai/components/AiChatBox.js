@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import AiMessage from "./AiMessage";
 import AiInput from "./AiInput";
-import { sendStudentAiMessage } from "../../../../services/students/studentAiApi";
+import { sendStudentAiMessageStream } from "../../../../services/students/studentAiApi";
 
 const AiChatBox = ({ selectedQuestion }) => {
   const [messages, setMessages] = useState([
@@ -22,6 +22,7 @@ const AiChatBox = ({ selectedQuestion }) => {
     if (selectedQuestion) {
       handleSend(selectedQuestion);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedQuestion]);
 
   useEffect(() => {
@@ -31,43 +32,100 @@ const AiChatBox = ({ selectedQuestion }) => {
   const handleSend = async (text) => {
     if (!text.trim() || isLoading) return;
 
-    const userMessage = {
-      role: "user",
-      content: text,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setIsLoading(true);
 
-    try {
-      const response = await sendStudentAiMessage({
-        message: text,
-        sessionId,
-      });
+    // Track whether the assistant placeholder has been added
+    let assistantAdded = false;
 
-      setSessionId(response.sessionId);
-
-      const assistantMessage = {
-        role: "assistant",
-        content: response.answer,
-        sources: response.sources || [],
-        responseSource: response.responseSource,
-        topSimilarityScore: response.topSimilarityScore,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
+    const addAssistantPlaceholder = (firstContent) => {
+      assistantAdded = true;
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            error?.response?.data?.message ||
-            "Sorry, I could not process your question right now.",
+          content: firstContent,
           sources: [],
-          responseSource: "error",
+          responseSource: null,
+          topSimilarityScore: null,
         },
       ]);
+    };
+
+    const appendToken = (content) => {
+      setMessages((prev) => {
+        const updated = [...prev];
+        const last = { ...updated[updated.length - 1] };
+        last.content += content;
+        updated[updated.length - 1] = last;
+        return updated;
+      });
+    };
+
+    try {
+      await sendStudentAiMessageStream({
+        message: text,
+        sessionId,
+        onToken: (content) => {
+          if (!assistantAdded) {
+            addAssistantPlaceholder(content);
+          } else {
+            appendToken(content);
+          }
+        },
+        onMetadata: (metadata) => {
+          setSessionId(metadata.sessionId);
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = { ...updated[updated.length - 1] };
+            last.responseSource = metadata.responseSource;
+            last.topSimilarityScore = metadata.topSimilarityScore;
+            last.sources = metadata.sources || [];
+            updated[updated.length - 1] = last;
+            return updated;
+          });
+        },
+        onError: (errorMsg) => {
+          const errorMessage = {
+            role: "assistant",
+            content:
+              errorMsg || "Sorry, I could not stream the response right now.",
+            sources: [],
+            responseSource: "error",
+            topSimilarityScore: null,
+          };
+          if (!assistantAdded) {
+            assistantAdded = true;
+            setMessages((prev) => [...prev, errorMessage]);
+          } else {
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = errorMessage;
+              return updated;
+            });
+          }
+        },
+        onDone: () => {
+          // Loading is cleared in finally
+        },
+      });
+    } catch {
+      const fallback = {
+        role: "assistant",
+        content: "Sorry, I could not stream the response right now.",
+        sources: [],
+        responseSource: "error",
+        topSimilarityScore: null,
+      };
+      if (!assistantAdded) {
+        setMessages((prev) => [...prev, fallback]);
+      } else {
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = fallback;
+          return updated;
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +138,7 @@ const AiChatBox = ({ selectedQuestion }) => {
           <AiMessage key={index} message={message} />
         ))}
 
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="ai-message assistant">
             <div className="ai-message-bubble">Thinking...</div>
           </div>
