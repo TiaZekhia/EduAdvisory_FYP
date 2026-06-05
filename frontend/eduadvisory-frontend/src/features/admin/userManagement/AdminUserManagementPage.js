@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -36,6 +36,48 @@ export default function AdminUserManagementPage() {
   const [editPassword, setEditPassword] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [actionUserId, setActionUserId] = useState(null);
+
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("all");
+  const [userStatusFilter, setUserStatusFilter] = useState("all");
+  const [userPage, setUserPage] = useState(1);
+  const USERS_PER_PAGE = 6;
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchesSearch =
+        !userSearch ||
+        u.username.toLowerCase().includes(userSearch.toLowerCase()) ||
+        u.linkedDisplayName?.toLowerCase().includes(userSearch.toLowerCase()) ||
+        u.linkedEmail?.toLowerCase().includes(userSearch.toLowerCase());
+      const matchesRole = userRoleFilter === "all" || u.role === userRoleFilter;
+      const matchesStatus =
+        userStatusFilter === "all" ||
+        (userStatusFilter === "active" ? u.isActive : !u.isActive);
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, userSearch, userRoleFilter, userStatusFilter]);
+
+  const totalUserPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+  const paginatedUsers = filteredUsers.slice(
+    (userPage - 1) * USERS_PER_PAGE,
+    userPage * USERS_PER_PAGE
+  );
+
+  const resetUserPage = useCallback(() => setUserPage(1), []);
+
+  const getUserPageNumbers = () => {
+    if (totalUserPages <= 5) return Array.from({ length: totalUserPages }, (_, i) => i + 1);
+    if (userPage <= 3) return [1, 2, 3, 4, "...", totalUserPages];
+    if (userPage >= totalUserPages - 2) return [1, "...", totalUserPages - 3, totalUserPages - 2, totalUserPages - 1, totalUserPages];
+    return [1, "...", userPage - 1, userPage, userPage + 1, "...", totalUserPages];
+  };
+
+  const getAvatarInitials = (username) =>
+    username ? username.slice(0, 2).toUpperCase() : "??";
+
+  const getRoleColor = (role) =>
+    role === "advisor" ? "avatar-advisor" : "avatar-student";
 
   const showSuccess = (detail) => {
     toast.current?.show({
@@ -292,13 +334,18 @@ export default function AdminUserManagementPage() {
               : `${availableLinks.length} unregistered ${role === "student" ? "student" : "advisor"} record(s) available.`}
           </div>
 
-          <Button
-            label="Create User"
-            icon="pi pi-user-plus"
+          <button
+            className="btn btn-dark d-flex align-items-center gap-2"
             onClick={handleCreateUser}
-            loading={submitting}
             disabled={submitting || linksLoading || availableLinks.length === 0}
-          />
+          >
+            {submitting ? (
+              <span className="spinner-border spinner-border-sm" role="status" />
+            ) : (
+              <i className="pi pi-user-plus" />
+            )}
+            Create User
+          </button>
         </div>
       </PageSectionCard>
 
@@ -307,94 +354,240 @@ export default function AdminUserManagementPage() {
         subtitle="View all locally managed student and advisor accounts"
       >
         {users.length === 0 ? (
-          <div className="admin-empty-state">No managed users found.</div>
+          <div className="admin-empty-state">
+            <i className="pi pi-users" style={{ fontSize: "2rem", color: "#9ca3af", marginBottom: "0.75rem" }} />
+            <div className="admin-empty-title">No managed users yet</div>
+            <div className="admin-empty-sub">Create your first user account using the form above.</div>
+          </div>
         ) : (
-          <div className="row g-3">
-            {users.map((user) => (
-              <div key={user.userId} className="col-12 col-xl-6">
-                <div className="admin-user-card">
-                  <div className="admin-user-card__top">
-                    <div>
-                      <div className="admin-user-card__username">{user.username}</div>
-                      <div className="admin-user-card__linked-name">{user.linkedDisplayName}</div>
-                    </div>
+          <>
+            {/* Filter toolbar */}
+            <div className="user-filter-bar">
+              <div className="user-search-wrap">
+                <i className="pi pi-search user-search-icon" />
+                <input
+                  type="text"
+                  className="user-search-input"
+                  placeholder="Search by username, name, or email..."
+                  value={userSearch}
+                  onChange={(e) => { setUserSearch(e.target.value); resetUserPage(); }}
+                />
+                {userSearch && (
+                  <button className="user-search-clear" onClick={() => { setUserSearch(""); resetUserPage(); }}>✕</button>
+                )}
+              </div>
 
-                    <div className="d-flex gap-2 flex-wrap justify-content-end">
-                      <Tag value={user.role.toUpperCase()} severity="info" />
-                      <Tag
-                        value={user.isActive ? "ACTIVE" : "INACTIVE"}
-                        severity={user.isActive ? "success" : "danger"}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="admin-user-card__meta">
-                    <div><strong>Linked Record:</strong> {user.secondaryText}</div>
-                    <div><strong>Email:</strong> {user.linkedEmail || "-"}</div>
-                    <div><strong>Keycloak ID:</strong> {user.keycloakId || "-"}</div>
-                  </div>
-
-                  <div className="admin-user-card__actions">
-                    <Button
-                      label="Edit"
-                      icon="pi pi-pencil"
-                      outlined
-                      onClick={() => openEditDialog(user)}
-                    />
-                    <Button
-                      label={user.isActive ? "Deactivate" : "Reactivate"}
-                      icon={user.isActive ? "pi pi-ban" : "pi pi-refresh"}
-                      severity={user.isActive ? "danger" : "success"}
-                      outlined
-                      loading={actionUserId === user.userId}
-                      onClick={() => (user.isActive ? handleDeactivateUser(user) : handleReactivateUser(user))}
-                    />
-                  </div>
+              <div className="user-filter-chips">
+                <div className="user-filter-group">
+                  {["all", "student", "advisor"].map((r) => (
+                    <button
+                      key={r}
+                      className={`user-filter-chip ${userRoleFilter === r ? "active" : ""}`}
+                      onClick={() => { setUserRoleFilter(r); resetUserPage(); }}
+                    >
+                      {r === "all" ? "All Roles" : r.charAt(0).toUpperCase() + r.slice(1) + "s"}
+                    </button>
+                  ))}
+                </div>
+                <div className="user-filter-group">
+                  {["all", "active", "inactive"].map((s) => (
+                    <button
+                      key={s}
+                      className={`user-filter-chip ${userStatusFilter === s ? "active" : ""}`}
+                      onClick={() => { setUserStatusFilter(s); resetUserPage(); }}
+                    >
+                      {s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+
+            {filteredUsers.length === 0 ? (
+              <div className="admin-empty-state">No users match your filters.</div>
+            ) : (
+              <>
+                <div className="user-results-info">
+                  Showing {(userPage - 1) * USERS_PER_PAGE + 1}–{Math.min(userPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
+                </div>
+
+                <div className="row g-3">
+                  {paginatedUsers.map((user) => (
+                    <div key={user.userId} className="col-12 col-xl-6">
+                      <div className={`admin-user-card ${!user.isActive ? "admin-user-card--inactive" : ""}`}>
+                        <div className="admin-user-card__top">
+                          <div className="admin-user-card__identity">
+                            <div className={`admin-user-avatar ${getRoleColor(user.role)}`}>
+                              {getAvatarInitials(user.username)}
+                            </div>
+                            <div>
+                              <div className="admin-user-card__username">{user.username}</div>
+                              <div className="admin-user-card__linked-name">{user.linkedDisplayName}</div>
+                            </div>
+                          </div>
+                          <div className="admin-user-card__badges">
+                            <span className={`user-role-badge user-role-badge--${user.role}`}>
+                              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                            </span>
+                            <span className={`user-status-badge ${user.isActive ? "user-status-badge--active" : "user-status-badge--inactive"}`}>
+                              <span className="user-status-dot" />
+                              {user.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="admin-user-card__meta">
+                          <div className="admin-user-meta-row">
+                            <i className="pi pi-id-card admin-user-meta-icon" />
+                            <span className="admin-user-meta-label">Linked</span>
+                            <span className="admin-user-meta-value">{user.secondaryText || "—"}</span>
+                          </div>
+                          <div className="admin-user-meta-row">
+                            <i className="pi pi-envelope admin-user-meta-icon" />
+                            <span className="admin-user-meta-label">Email</span>
+                            <span className="admin-user-meta-value">{user.linkedEmail || "—"}</span>
+                          </div>
+                          <div className="admin-user-meta-row">
+                            <i className="pi pi-key admin-user-meta-icon" />
+                            <span className="admin-user-meta-label">Keycloak ID</span>
+                            <span className="admin-user-meta-value admin-user-meta-mono">{user.keycloakId || "—"}</span>
+                          </div>
+                        </div>
+
+                        <div className="admin-user-card__actions">
+                          <button
+                            className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                            onClick={() => openEditDialog(user)}
+                          >
+                            <i className="pi pi-pencil" style={{ fontSize: "0.75rem" }} />
+                            Edit
+                          </button>
+                          <button
+                            className={`btn btn-sm d-flex align-items-center gap-1 ${user.isActive ? "btn-outline-danger" : "btn-outline-success"}`}
+                            disabled={actionUserId === user.userId}
+                            onClick={() => (user.isActive ? handleDeactivateUser(user) : handleReactivateUser(user))}
+                          >
+                            {actionUserId === user.userId ? (
+                              <span className="spinner-border spinner-border-sm" role="status" />
+                            ) : (
+                              <i className={`pi ${user.isActive ? "pi-ban" : "pi-refresh"}`} style={{ fontSize: "0.75rem" }} />
+                            )}
+                            {user.isActive ? "Deactivate" : "Reactivate"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {totalUserPages > 1 && (
+                  <div className="doc-pagination" style={{ marginTop: "1rem" }}>
+                    <span className="doc-pagination-info">
+                      {(userPage - 1) * USERS_PER_PAGE + 1}–{Math.min(userPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length}
+                    </span>
+                    <div className="doc-pagination-controls">
+                      <button className="doc-page-btn" onClick={() => setUserPage((p) => p - 1)} disabled={userPage === 1}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                      </button>
+                      {getUserPageNumbers().map((page, idx) =>
+                        page === "..." ? (
+                          <span key={`e-${idx}`} className="doc-page-ellipsis">…</span>
+                        ) : (
+                          <button key={page} className={`doc-page-btn ${userPage === page ? "active" : ""}`} onClick={() => setUserPage(page)}>
+                            {page}
+                          </button>
+                        )
+                      )}
+                      <button className="doc-page-btn" onClick={() => setUserPage((p) => p + 1)} disabled={userPage === totalUserPages}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </PageSectionCard>
 
       <Dialog
-        header={editingUser ? `Reset Password for ${editingUser.username}` : "Reset Password"}
         visible={editDialogOpen}
-        style={{ width: "32rem", maxWidth: "95vw" }}
+        style={{ width: "26rem", maxWidth: "95vw" }}
+        header={false}
+        closable={!savingEdit}
         onHide={() => {
           if (savingEdit) return;
           setEditDialogOpen(false);
           setEditingUser(null);
         }}
+        pt={{ content: { style: { padding: 0 } }, header: { style: { display: "none" } } }}
       >
-        <div className="d-flex flex-column gap-3">
-          <div>
-            <label className="admin-form-label">New Password</label>
+        <div className="reset-pwd-dialog">
+          {/* Header */}
+          <div className="reset-pwd-dialog__header">
+            <div className="reset-pwd-dialog__icon">
+              <i className="pi pi-lock" />
+            </div>
+            <h3 className="reset-pwd-dialog__title">Reset Password</h3>
+            <p className="reset-pwd-dialog__subtitle">
+              Update login credentials for this account
+            </p>
+          </div>
+
+          {/* User info strip */}
+          {editingUser && (
+            <div className="reset-pwd-dialog__user-strip">
+              <div className={`admin-user-avatar admin-user-avatar--sm ${getRoleColor(editingUser.role)}`}>
+                {getAvatarInitials(editingUser.username)}
+              </div>
+              <div className="reset-pwd-dialog__user-info">
+                <span className="reset-pwd-dialog__user-name">{editingUser.username}</span>
+                <span className="reset-pwd-dialog__user-meta">{editingUser.linkedDisplayName}</span>
+              </div>
+              <span className={`user-role-badge user-role-badge--${editingUser.role}`}>
+                {editingUser.role.charAt(0).toUpperCase() + editingUser.role.slice(1)}
+              </span>
+            </div>
+          )}
+
+          {/* Body */}
+          <div className="reset-pwd-dialog__body">
+            <label className="reset-pwd-dialog__label">New Password</label>
             <Password
               value={editPassword}
               onChange={(event) => setEditPassword(event.target.value)}
               feedback={false}
               toggleMask
               className="w-100 admin-password"
-              inputClassName="w-100"
+              inputClassName="w-100 reset-pwd-input"
               placeholder="Enter the new password"
+              disabled={savingEdit}
             />
+            <p className="reset-pwd-dialog__hint">
+              Only the password will be updated — username, role, and linked record remain unchanged.
+            </p>
           </div>
 
-          <div className="text-muted small">
-            This action only updates the user's password. Username, role, and linked record stay unchanged.
-          </div>
-
-          <div className="d-flex justify-content-end gap-2 mt-2">
-            <Button
-              label="Cancel"
-              text
+          {/* Footer */}
+          <div className="reset-pwd-dialog__footer">
+            <button
+              className="btn btn-outline-secondary"
+              disabled={savingEdit}
               onClick={() => {
                 setEditDialogOpen(false);
                 setEditingUser(null);
               }}
-            />
-            <Button label="Save Changes" onClick={handleSaveEdit} loading={savingEdit} />
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-dark d-flex align-items-center gap-2"
+              disabled={savingEdit}
+              onClick={handleSaveEdit}
+            >
+              {savingEdit && <span className="spinner-border spinner-border-sm" role="status" />}
+              Save Changes
+            </button>
           </div>
         </div>
       </Dialog>

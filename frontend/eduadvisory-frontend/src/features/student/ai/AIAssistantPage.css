@@ -68,7 +68,28 @@
   padding: 14px 16px;
   border-radius: 16px;
   line-height: 1.5;
-  white-space: pre-wrap;
+}
+
+.ai-message-content ul,
+.ai-message-content ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.ai-message-content li {
+  margin-bottom: 4px;
+}
+
+.ai-message-content p {
+  margin: 6px 0;
+}
+
+.ai-message-content p:first-child {
+  margin-top: 0;
+}
+
+.ai-message-content p:last-child {
+  margin-bottom: 0;
 }
 
 .ai-message.user .ai-message-bubble {

@@ -1,4 +1,6 @@
 ﻿using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using EduAdvisory_Backend.DTOs.AI.StudentChat;
 using EduAdvisory_Backend.Interfaces.Services.AI;
 using EduAdvisory_Backend.Models;
@@ -51,6 +53,43 @@ public class StudentAiController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("chat/stream")]
+    public async Task StreamChat(
+        [FromBody] StudentAiChatRequest request,
+        CancellationToken cancellationToken)
+    {
+        var studentId = await GetCurrentStudentIdAsync(cancellationToken);
+
+        if (studentId == null)
+        {
+            Response.StatusCode = 401;
+            Response.ContentType = "application/json";
+            await Response.WriteAsync(
+                "{\"message\":\"Student profile is not linked to this account.\"}",
+                cancellationToken);
+            return;
+        }
+
+        Response.ContentType = "text/event-stream";
+        Response.Headers["Cache-Control"] = "no-cache";
+        Response.Headers["Connection"] = "keep-alive";
+        Response.Headers["X-Accel-Buffering"] = "no";
+
+        try
+        {
+            await _studentAiChatService.StreamChatAsync(
+                studentId.Value, request, Response.Body, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            var errorJson = JsonSerializer.Serialize(new { message = ex.Message });
+            var errorBytes = Encoding.UTF8.GetBytes(
+                $"event: error\ndata: {errorJson}\n\nevent: done\ndata: {{}}\n\n");
+            await Response.Body.WriteAsync(errorBytes, cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
         }
     }
 

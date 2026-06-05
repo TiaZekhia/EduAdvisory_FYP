@@ -8,4 +8,10 @@ public interface IStudentAiChatService
         int studentId,
         StudentAiChatRequest request,
         CancellationToken cancellationToken = default);
+
+    Task StreamChatAsync(
+        int studentId,
+        StudentAiChatRequest request,
+        Stream responseStream,
+        CancellationToken cancellationToken = default);
 }
