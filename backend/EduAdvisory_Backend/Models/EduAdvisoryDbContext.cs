@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 
 namespace EduAdvisory_Backend.Models;
-
 public partial class EduAdvisoryDbContext : DbContext
 {
     public EduAdvisoryDbContext()
@@ -66,6 +66,15 @@ public partial class EduAdvisoryDbContext : DbContext
     public DbSet<BroadcastAttachment> BroadcastAttachments { get; set; }
 
     public DbSet<RiskInterventionLog> RiskInterventionLogs { get; set; }
+    public DbSet<AiDocument> AiDocuments { get; set; }
+
+    public DbSet<AiDocumentChunk> AiDocumentChunks { get; set; }
+
+    public DbSet<AiChatSession> AiChatSessions { get; set; }
+
+    public DbSet<AiChatMessage> AiChatMessages { get; set; }
+
+    public DbSet<AiRetrievalLog> AiRetrievalLogs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -342,6 +351,82 @@ public partial class EduAdvisoryDbContext : DbContext
                 .HasForeignKey(e => e.BroadcastMessageId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("broadcast_attachment_message_id_fkey");
+        });
+
+        modelBuilder.HasPostgresExtension("vector");
+
+        modelBuilder.Entity<AiDocument>(entity =>
+        {
+            entity.HasKey(e => e.DocumentId).HasName("ai_documents_pkey");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasMany(e => e.Chunks)
+                .WithOne(e => e.Document)
+                .HasForeignKey(e => e.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.CourseCode, e.DocumentType })
+                .HasDatabaseName("idx_ai_documents_course_type");
+        });
+
+        modelBuilder.Entity<AiDocumentChunk>(entity =>
+        {
+            entity.HasKey(e => e.ChunkId).HasName("ai_document_chunks_pkey");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.Embedding)
+                .HasColumnType("vector(1536)");
+
+            entity.HasIndex(e => e.CourseCode)
+                .HasDatabaseName("idx_ai_chunks_course_code");
+
+            entity.HasIndex(e => e.DocumentType)
+                .HasDatabaseName("idx_ai_chunks_document_type");
+        });
+
+        modelBuilder.Entity<AiChatSession>(entity =>
+        {
+            entity.HasKey(e => e.SessionId).HasName("ai_chat_sessions_pkey");
+
+            entity.Property(e => e.StartedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.LastActivityAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasMany(e => e.Messages)
+                .WithOne(e => e.Session)
+                .HasForeignKey(e => e.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.StudentId)
+                .HasDatabaseName("idx_ai_chat_sessions_student_id");
+        });
+
+        modelBuilder.Entity<AiChatMessage>(entity =>
+        {
+            entity.HasKey(e => e.MessageId).HasName("ai_chat_messages_pkey");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => e.SessionId)
+                .HasDatabaseName("idx_ai_chat_messages_session_id");
+        });
+
+        modelBuilder.Entity<AiRetrievalLog>(entity =>
+        {
+            entity.HasKey(e => e.RetrievalLogId).HasName("ai_retrieval_logs_pkey");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => e.StudentId)
+                .HasDatabaseName("idx_ai_retrieval_logs_student_id");
         });
         OnModelCreatingPartial(modelBuilder);
     }

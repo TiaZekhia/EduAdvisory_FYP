@@ -3,6 +3,7 @@ import ProtectedRoute from "../../shared/components/ProtectedRoute";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminUserManagementPage from "../../features/admin/userManagement/AdminUserManagementPage";
 import NotFoundPage from "../../shared/pages/NotFoundPage";
+import AiKnowledgeBasePage from "../../features/admin/aiKnowledgeBase/AiKnowledgeBasePage";
 
 export const adminRouter = createBrowserRouter([
   {
@@ -19,7 +20,8 @@ export const adminRouter = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="users" replace /> },
       { path: "users", element: <AdminUserManagementPage /> },
-    ],
+      { path: "ai-knowledge-base", element: <AiKnowledgeBasePage /> },
+    ]
   },
   { path: "*", element: <NotFoundPage /> },
 ]);
