@@ -85,7 +85,8 @@ namespace EduAdvisory_Backend.Repositories
                     Name = ((s.FirstName ?? "") + " " + (s.LastName ?? "")).Trim(),
                     CurrentSemester = s.CurrentSemester ?? 0,
                     Gpa = s.CurrentGpa ?? 0,
-                    AcademicStatus = s.AcademicStatus ?? "GOOD"
+                    AcademicStatus = s.AcademicStatus ?? "GOOD",
+                    ProgramCode = s.ProgramCode ?? ""
                 })
                 .ToList();
         }

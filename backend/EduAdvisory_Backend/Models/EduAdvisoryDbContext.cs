@@ -53,6 +53,8 @@ public partial class EduAdvisoryDbContext : DbContext
 
     public DbSet<AdvisorAvailabilityRule> AdvisorAvailabilityRules { get; set; }
 
+    public DbSet<AdvisorAvailabilityException> AdvisorAvailabilityExceptions { get; set; }
+
     public DbSet<Conversation> Conversations { get; set; }
 
     public DbSet<ChatMessage> ChatMessages { get; set; }
@@ -428,6 +430,18 @@ public partial class EduAdvisoryDbContext : DbContext
             entity.HasIndex(e => e.StudentId)
                 .HasDatabaseName("idx_ai_retrieval_logs_student_id");
         });
+        modelBuilder.Entity<AdvisorAvailabilityException>(entity =>
+        {
+            entity.HasKey(e => e.ExceptionId).HasName("advisor_availability_exception_pkey");
+            entity.HasIndex(e => new { e.AdvisorId, e.ExceptionDate })
+                .HasDatabaseName("advisor_availability_exception_advisor_date_idx");
+            entity.HasOne(e => e.Advisor)
+                .WithMany()
+                .HasForeignKey(e => e.AdvisorId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("advisor_availability_exception_advisor_id_fkey");
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

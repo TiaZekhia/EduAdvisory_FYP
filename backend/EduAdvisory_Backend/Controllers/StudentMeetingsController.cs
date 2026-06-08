@@ -65,6 +65,14 @@ namespace EduAdvisory_Backend.Controllers
 
             var dayOfWeek = (int)date.DayOfWeek;
 
+            var exceptions = await _context.Set<AdvisorAvailabilityException>()
+                .Where(x => x.AdvisorId == student.AdvisorId && x.ExceptionDate == date)
+                .ToListAsync();
+
+            // Full-day block: any exception with no time range
+            if (exceptions.Any(x => x.StartTime == null))
+                return Ok(new List<AdvisorCalendarStartTimeDto>());
+
             var rules = await _context.Set<AdvisorAvailabilityRule>()
                 .Where(x =>
                     x.AdvisorId == student.AdvisorId &&
@@ -128,6 +136,18 @@ namespace EduAdvisory_Backend.Controllers
                 })
                 .OrderBy(x => x.StartAt)
                 .ToList();
+
+            // Filter out slots that overlap with any partial-day exception
+            var partialExceptions = exceptions.Where(x => x.StartTime != null).ToList();
+            if (partialExceptions.Count > 0)
+            {
+                merged = merged.Where(slot =>
+                {
+                    var slotLocalTime = slot.StartAt.ToLocalTime().TimeOfDay;
+                    return !partialExceptions.Any(ex =>
+                        slotLocalTime >= ex.StartTime && slotLocalTime < ex.EndTime);
+                }).ToList();
+            }
 
             return Ok(merged);
         }

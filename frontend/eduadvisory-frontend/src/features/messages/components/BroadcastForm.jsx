@@ -15,6 +15,7 @@ export default function BroadcastForm({ token }) {
   const [students, setStudents] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [studentSearch, setStudentSearch] = useState("");
+  const [programFilter, setProgramFilter] = useState("ALL");
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -25,11 +26,30 @@ export default function BroadcastForm({ token }) {
       .catch((err) => console.error("Failed to load students", err));
   }, [token]);
 
-  const filteredStudents = students.filter((student) =>
-    `${student.fullName || ""} ${student.programCode || ""} ${student.studentId || ""}`
-      .toLowerCase()
-      .includes(studentSearch.toLowerCase())
-  );
+  const programs = [...new Set(students.map((s) => s.programCode).filter(Boolean))].sort();
+
+  const filteredStudents = students.filter((student) => {
+    const q = studentSearch.trim().toLowerCase();
+    if (
+      q &&
+      !`${student.fullName || ""} ${student.studentId || ""}`
+        .toLowerCase()
+        .includes(q)
+    )
+      return false;
+
+    if (programFilter !== "ALL" && student.programCode !== programFilter)
+      return false;
+
+    return true;
+  });
+
+  const hasActiveFilters = studentSearch.trim() || programFilter !== "ALL";
+
+  function clearFilters() {
+    setStudentSearch("");
+    setProgramFilter("ALL");
+  }
 
   function showFileError(message) {
     toast.current?.show({
@@ -103,6 +123,7 @@ export default function BroadcastForm({ token }) {
       setFiles([]);
       setSelectedStudentIds([]);
       setStudentSearch("");
+      setProgramFilter("ALL");
 
       toast.current.show({
         severity: "success",
@@ -239,14 +260,84 @@ export default function BroadcastForm({ token }) {
               students.
             </div>
 
-            <input
-              type="text"
-              className="msg-input"
-              placeholder="Search students..."
-              value={studentSearch}
-              onChange={(e) => setStudentSearch(e.target.value)}
-              style={{ marginTop: "0.75rem", marginBottom: "0.75rem" }}
-            />
+            {/* Filter panel */}
+            <div className="bc-filter-panel">
+              <div className="bc-filter-label">
+                <i className="pi pi-filter" />
+                Filters
+              </div>
+
+              <div className="bc-filter-controls">
+                <div className="bc-filter-search-wrap">
+                  <i className="pi pi-search bc-filter-search-icon" />
+                  <input
+                    type="text"
+                    className="bc-filter-search"
+                    placeholder="Name or Student ID…"
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                  />
+                  {studentSearch && (
+                    <button
+                      type="button"
+                      className="bc-filter-search-clear"
+                      onClick={() => setStudentSearch("")}
+                    >
+                      <i className="pi pi-times" />
+                    </button>
+                  )}
+                </div>
+
+                {programs.length > 0 && (
+                  <div className="bc-filter-select-wrap">
+                    <i className="pi pi-book bc-filter-select-icon" />
+                    <select
+                      className="bc-filter-select"
+                      value={programFilter}
+                      onChange={(e) => setProgramFilter(e.target.value)}
+                    >
+                      <option value="ALL">All Programs</option>
+                      {programs.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    className="bc-filter-clear"
+                    onClick={clearFilters}
+                  >
+                    <i className="pi pi-times" />
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              <div className="bc-filter-count">
+                {hasActiveFilters ? (
+                  <>
+                    <span className="bc-filter-count-highlight">
+                      {filteredStudents.length}
+                    </span>
+                    {" of "}
+                    {students.length} students match
+                  </>
+                ) : (
+                  <>{students.length} students total</>
+                )}
+                {selectedStudentIds.length > 0 && (
+                  <span className="bc-filter-count-selected">
+                    {" · "}
+                    {selectedStudentIds.length} selected
+                  </span>
+                )}
+              </div>
+            </div>
 
             <div
               className="student-selector__chips"

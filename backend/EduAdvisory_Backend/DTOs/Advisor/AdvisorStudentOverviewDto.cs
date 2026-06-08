@@ -7,5 +7,6 @@
         public int CurrentSemester { get; set; }
         public decimal Gpa { get; set; }
         public string AcademicStatus { get; set; } = "";
+        public string ProgramCode { get; set; } = "";
     }
 }

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import StatCard from "./components/StatCard";
 import CourseCard from "./components/CourseCard";
 import { useStudentSummary } from "../context/StudentSummaryProvider";
@@ -12,11 +13,27 @@ import QuickActionCard from "./components/QuickActionCard";
 import SectionHeader from "./components/SectionHeader";
 import ProgressSummaryCard from "./components/ProgressSummaryCard.js";
 import { useStudentAlerts } from "../context/StudentAlertsProvider.js";
+import UpcomingMeetingsCalendar from "../../../shared/components/UpcomingMeetingsCalendar";
+import { studentMeetingsApi } from "../../../services/students/studentMeetingsApi";
 
 export default function DashboardPage() {
-const { latestAlerts, alertsLoading } = useStudentAlerts();
-const { summary, loading: summaryLoading } = useStudentSummary();
-const navigate = useNavigate();
+  const { latestAlerts, alertsLoading } = useStudentAlerts();
+  const { summary, loading: summaryLoading } = useStudentSummary();
+  const navigate = useNavigate();
+
+  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
+  useEffect(() => {
+    studentMeetingsApi
+      .getUpcoming()
+      .then((res) =>
+        setUpcomingMeetings(
+          (res?.data ?? []).filter(
+            (m) => new Date(m.endAt ?? m.startAt) > new Date()
+          )
+        )
+      )
+      .catch((e) => console.error("Failed to load upcoming meetings", e));
+  }, []);
 
   const {
     performance,
@@ -165,6 +182,14 @@ const navigate = useNavigate();
     }}
   />
 </div>
+
+      {/* Upcoming meetings calendar */}
+      <UpcomingMeetingsCalendar
+        meetings={upcomingMeetings}
+        nameField="advisorName"
+        title="Upcoming Meetings"
+        subtitle="Your scheduled sessions with your advisor"
+      />
 
       {/* Current courses */}
       <div className="mt-4">
