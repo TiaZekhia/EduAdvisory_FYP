@@ -1,29 +1,23 @@
-import { useState } from "react";
 import AiChatBox from "./components/AiChatBox";
-import SuggestedQuestions from "./components/SuggestedQuestions";
 import "./AIAssistantPage.css";
 
 const AIAssistantPage = () => {
-  const [selectedQuestion, setSelectedQuestion] = useState("");
-
   return (
-    <div className="student-ai-page">
-      <div className="student-ai-header">
-        <h1>AI Academic Assistant</h1>
-        <p>
-          Ask questions about your study guides, course syllabuses, academic
-          progress, courses, or upcoming meetings.
-        </p>
+    <div className="ai-page">
+      <div className="ai-page-header">
+        <div className="ai-page-header-icon">
+          <i className="pi pi-sparkles" />
+        </div>
+        <div>
+          <div className="ai-page-title">AI Academic Assistant</div>
+          <div className="ai-page-subtitle">
+            Ask about your study guides, syllabuses, courses, academic progress, or meetings.
+          </div>
+        </div>
       </div>
 
-      <div className="student-ai-layout">
-        <div className="student-ai-main">
-          <AiChatBox selectedQuestion={selectedQuestion} />
-        </div>
-
-        <aside className="student-ai-sidebar">
-          <SuggestedQuestions onSelectQuestion={setSelectedQuestion} />
-        </aside>
+      <div className="ai-page-body">
+        <AiChatBox />
       </div>
     </div>
   );

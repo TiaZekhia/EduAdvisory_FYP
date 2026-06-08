@@ -3,7 +3,7 @@ import AiMessage from "./AiMessage";
 import AiInput from "./AiInput";
 import { sendStudentAiMessageStream } from "../../../../services/students/studentAiApi";
 
-const AiChatBox = ({ selectedQuestion }) => {
+const AiChatBox = () => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -17,13 +17,6 @@ const AiChatBox = ({ selectedQuestion }) => {
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef(null);
-
-  useEffect(() => {
-    if (selectedQuestion) {
-      handleSend(selectedQuestion);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedQuestion]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -140,7 +133,12 @@ const AiChatBox = ({ selectedQuestion }) => {
 
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="ai-message assistant">
-            <div className="ai-message-bubble">Thinking...</div>
+            <div className="ai-avatar"><i className="pi pi-sparkles" /></div>
+            <div className="ai-thinking">
+              <div className="ai-thinking-dots">
+                <span /><span /><span />
+              </div>
+            </div>
           </div>
         )}
 
