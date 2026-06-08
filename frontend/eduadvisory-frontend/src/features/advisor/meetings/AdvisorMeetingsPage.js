@@ -44,8 +44,8 @@ export default function AdvisorMeetingsPage() {
 
   const [availabilityDialogOpen, setAvailabilityDialogOpen] = useState(false);
   const [dayOfWeek, setDayOfWeek] = useState(1);
-  const [startTime, setStartTime] = useState(null);
-  const [endTime, setEndTime] = useState(null);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [savingAvailability, setSavingAvailability] = useState(false);
 
   const [responseDialogOpen, setResponseDialogOpen] = useState(false);
@@ -53,6 +53,7 @@ export default function AdvisorMeetingsPage() {
   const [decision, setDecision] = useState("ACCEPTED");
   const [rejectionReason, setRejectionReason] = useState("");
   const [responding, setResponding] = useState(false);
+  const [respondErr, setRespondErr] = useState("");
 
   const rulesCount = useMemo(() => weeklyAvailability.length, [weeklyAvailability]);
 
@@ -147,15 +148,15 @@ export default function AdvisorMeetingsPage() {
 
       await advisorMeetingsApi.createWeeklyAvailability({
         dayOfWeek,
-        startTime: toTimeString(startTime),
-        endTime: toTimeString(endTime),
+        startTime: startTime + ":00",
+        endTime: endTime + ":00",
       });
 
       setMsg("Weekly availability added.");
       setAvailabilityDialogOpen(false);
       setDayOfWeek(1);
-      setStartTime(null);
-      setEndTime(null);
+      setStartTime("");
+      setEndTime("");
       await loadData();
     } catch (e) {
       console.error(e);
@@ -181,6 +182,7 @@ export default function AdvisorMeetingsPage() {
     setSelectedRequest(request);
     setDecision("ACCEPTED");
     setRejectionReason("");
+    setRespondErr("");
     setResponseDialogOpen(true);
   };
 
@@ -188,13 +190,13 @@ export default function AdvisorMeetingsPage() {
     if (!selectedRequest) return;
 
     if (decision === "REJECTED" && !rejectionReason.trim()) {
-      setErr("Please provide a rejection reason.");
+      setRespondErr("Please provide a rejection reason.");
       return;
     }
 
     try {
       setResponding(true);
-      setErr("");
+      setRespondErr("");
 
       await advisorMeetingsApi.respondToRequest(selectedRequest.requestId, {
         decision,
@@ -208,19 +210,26 @@ export default function AdvisorMeetingsPage() {
       );
 
       setResponseDialogOpen(false);
-      setReconnectRequired(false); // clear reconnect flag on success
+      setReconnectRequired(false);
       await loadData();
     } catch (e) {
       console.error(e);
       const responseData = e?.response?.data;
 
       if (responseData?.reconnectRequired) {
-        // Flag that reconnect is needed — the banner will surface the button
         setReconnectRequired(true);
-        setErr(responseData.message || "Google connection expired. Please reconnect your Google account.");
+        setRespondErr(
+          responseData.message ||
+            "Google connection expired. Please close this dialog and reconnect your Google account."
+        );
         await loadGoogleStatus();
       } else {
-        setErr(responseData?.message ?? responseData ?? e?.message ?? "Failed to respond to request.");
+        const message =
+          responseData?.message ??
+          (typeof responseData === "string" ? responseData : null) ??
+          e?.message ??
+          "Failed to respond to request.";
+        setRespondErr(message);
       }
     } finally {
       setResponding(false);
@@ -290,6 +299,8 @@ export default function AdvisorMeetingsPage() {
         <CountCard title="Pending Requests" value={pendingRequests.length} icon="pi pi-inbox" />
         <CountCard title="Upcoming Meetings" value={upcomingMeetings.length} icon="pi pi-users" />
       </div>
+
+      <BlockedDatesSection weeklyRules={weeklyAvailability} />
 
       <Card className="meetings-card shadow-sm border-0 mb-4">
         <div className="meetings-card-header">
@@ -391,7 +402,7 @@ export default function AdvisorMeetingsPage() {
         {historyMeetings.length ? (
           <div className="d-flex flex-column gap-3">
             {historyMeetings.map((meeting) => (
-              <MeetingCard key={meeting.meetingId} meeting={meeting} />
+              <MeetingCard key={meeting.meetingId} meeting={meeting} isPast />
             ))}
           </div>
         ) : (
@@ -431,26 +442,26 @@ export default function AdvisorMeetingsPage() {
           />
         </div>
 
-        <div className="mb-3">
-          <label className="meeting-advisor-label d-block mb-2">From</label>
-          <Calendar
-            value={startTime}
-            onChange={(e) => setStartTime(e.value)}
-            timeOnly
-            hourFormat="24"
-            className="w-100"
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="meeting-advisor-label d-block mb-2">To</label>
-          <Calendar
-            value={endTime}
-            onChange={(e) => setEndTime(e.value)}
-            timeOnly
-            hourFormat="24"
-            className="w-100"
-          />
+        <div className="exc-time-row mb-3">
+          <div className="exc-time-field">
+            <label className="exc-time-label">From</label>
+            <input
+              type="time"
+              className="exc-time-input"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
+          </div>
+          <div className="exc-time-sep">→</div>
+          <div className="exc-time-field">
+            <label className="exc-time-label">To</label>
+            <input
+              type="time"
+              className="exc-time-input"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="meeting-reminder-box">
@@ -467,7 +478,7 @@ export default function AdvisorMeetingsPage() {
             label={savingAvailability ? "Saving..." : "Save"}
             icon="pi pi-check"
             onClick={handleCreateAvailability}
-            disabled={savingAvailability || !startTime || !endTime}
+            disabled={savingAvailability || !startTime || !endTime || startTime >= endTime}
           />
         </div>
       </Dialog>
@@ -553,6 +564,14 @@ export default function AdvisorMeetingsPage() {
               </div>
             )}
 
+            {respondErr && (
+              <Message
+                severity={respondErr.toLowerCase().includes("google") ? "warn" : "error"}
+                text={respondErr}
+                className="w-100 mt-3"
+              />
+            )}
+
             <div className="d-flex justify-content-end gap-2 mt-4">
               <Button
                 label="Cancel"
@@ -577,6 +596,337 @@ export default function AdvisorMeetingsPage() {
         ) : null}
       </Dialog>
     </div>
+  );
+}
+
+/* ─── Blocked Dates Section ───────────────────────────────────── */
+const EXC_DOW_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const EXC_MONTH_NAMES = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+];
+
+function toDateKey(y, m, d) {
+  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+function fmtExcTime(t) {
+  if (!t) return "";
+  return t.slice(0, 5);
+}
+
+function fmtExcDate(dateStr) {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, {
+    weekday: "short", month: "short", day: "numeric",
+  });
+}
+
+function BlockedDatesSection({ weeklyRules }) {
+  const today = new Date();
+  const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [exceptions, setExceptions] = useState([]); // [{date, startTime, endTime, exceptionId}]
+  const [loadingEx, setLoadingEx] = useState(true);
+  const [exErr, setExErr] = useState("");
+
+  // Dialog state
+  const [blockDialog, setBlockDialog] = useState(false);
+  const [blockDate, setBlockDate] = useState("");
+  const [fullDay, setFullDay] = useState(true);
+  const [blockStart, setBlockStart] = useState(""); // "HH:mm"
+  const [blockEnd, setBlockEnd] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState("");
+
+  const ruleDays = new Set(weeklyRules.map((r) => r.dayOfWeek));
+
+  useEffect(() => {
+    advisorMeetingsApi.getExceptions()
+      .then((res) => setExceptions(res.data ?? []))
+      .catch(() => setExErr("Failed to load blocked periods."))
+      .finally(() => setLoadingEx(false));
+  }, []);
+
+  const openBlockDialog = (dateKey) => {
+    setBlockDate(dateKey);
+    setFullDay(true);
+    setBlockStart("");
+    setBlockEnd("");
+    setSaveErr("");
+    setBlockDialog(true);
+  };
+
+  const handleSaveBlock = async () => {
+    setSaveErr("");
+    setSaving(true);
+    try {
+      const payload = { date: blockDate };
+      if (!fullDay) {
+        if (!blockStart || !blockEnd) {
+          setSaveErr("Please select both start and end time.");
+          setSaving(false);
+          return;
+        }
+        payload.startTime = blockStart + ":00";
+        payload.endTime = blockEnd + ":00";
+      }
+      const res = await advisorMeetingsApi.addException(payload);
+      // Reload exceptions list
+      const updated = await advisorMeetingsApi.getExceptions();
+      setExceptions(updated.data ?? []);
+      setBlockDialog(false);
+    } catch (e) {
+      setSaveErr(e?.response?.data?.message ?? "Failed to block this period.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemove = async (exceptionId) => {
+    setExErr("");
+    try {
+      await advisorMeetingsApi.removeException(exceptionId);
+      setExceptions((prev) => prev.filter((x) => x.exceptionId !== exceptionId));
+    } catch (e) {
+      setExErr(e?.response?.data?.message ?? "Failed to remove blocked period.");
+    }
+  };
+
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewYear((y) => y - 1); setViewMonth(11); }
+    else setViewMonth((m) => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewYear((y) => y + 1); setViewMonth(0); }
+    else setViewMonth((m) => m + 1);
+  };
+
+  const upcomingExceptions = exceptions.slice(0, 10);
+
+  return (
+    <>
+      <Card className="meetings-card shadow-sm border-0 mb-4">
+        <div className="meetings-card-header">
+          <div>
+            <div className="fw-semibold fs-4">Blocked Periods</div>
+            <div className="text-muted mt-1">
+              Block a full day or specific hours — overrides your weekly rules
+            </div>
+          </div>
+          {exceptions.length > 0 && (
+            <Tag
+              value={`${exceptions.length} blocked`}
+              severity="danger"
+              className="meeting-status-tag"
+            />
+          )}
+        </div>
+
+        {exErr && <Message severity="error" text={exErr} className="mb-3" />}
+
+        <div className="exc-layout">
+          <div className="exc-calendar">
+            <div className="exc-nav">
+              <button type="button" className="exc-nav-btn" onClick={prevMonth}>
+                <i className="pi pi-chevron-left" />
+              </button>
+              <span className="exc-month-label">
+                {EXC_MONTH_NAMES[viewMonth]} {viewYear}
+              </span>
+              <button type="button" className="exc-nav-btn" onClick={nextMonth}>
+                <i className="pi pi-chevron-right" />
+              </button>
+            </div>
+
+            <div className="exc-grid">
+              {EXC_DOW_LABELS.map((d) => (
+                <div key={d} className="exc-dow">{d}</div>
+              ))}
+              {cells.map((day, idx) => {
+                if (!day) return <div key={`pad-${idx}`} className="exc-day exc-day--empty" />;
+
+                const dateKey = toDateKey(viewYear, viewMonth, day);
+                const dow = new Date(viewYear, viewMonth, day).getDay();
+                const isPast = dateKey < todayKey;
+                const isToday = dateKey === todayKey;
+                const hasRule = ruleDays.has(dow);
+                const dayExceptions = exceptions.filter((x) => x.date === dateKey);
+                const isFullBlocked = dayExceptions.some((x) => !x.startTime);
+                const isPartialBlocked = dayExceptions.length > 0 && !isFullBlocked;
+
+                return (
+                  <button
+                    key={dateKey}
+                    type="button"
+                    className={[
+                      "exc-day",
+                      isPast ? "exc-day--past" : "",
+                      isToday ? "exc-day--today" : "",
+                      hasRule && !isPast ? "exc-day--has-rule" : "",
+                      isFullBlocked ? "exc-day--blocked" : "",
+                      isPartialBlocked ? "exc-day--partial" : "",
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => !isPast && openBlockDialog(dateKey)}
+                    disabled={isPast || loadingEx}
+                    title={
+                      isPast ? "" :
+                      isFullBlocked ? "Full day blocked — click to add more" :
+                      isPartialBlocked ? "Partially blocked — click to add more" :
+                      hasRule ? "Click to block hours on this date" :
+                      "Click to block this date"
+                    }
+                  >
+                    {day}
+                    {hasRule && !isFullBlocked && !isPast && !isPartialBlocked && (
+                      <span className="exc-dot exc-dot--rule" />
+                    )}
+                    {isFullBlocked && <span className="exc-dot exc-dot--blocked" />}
+                    {isPartialBlocked && <span className="exc-dot exc-dot--partial" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="exc-legend">
+              <span className="exc-legend-item">
+                <span className="exc-legend-dot exc-legend-dot--rule" /> Weekly rule
+              </span>
+              <span className="exc-legend-item">
+                <span className="exc-legend-dot exc-legend-dot--partial" /> Partial block
+              </span>
+              <span className="exc-legend-item">
+                <span className="exc-legend-dot exc-legend-dot--blocked" /> Full day
+              </span>
+            </div>
+          </div>
+
+          <div className="exc-sidebar">
+            {upcomingExceptions.length > 0 ? (
+              <>
+                <div className="exc-sidebar-label">Upcoming blocked periods</div>
+                <div className="exc-blocked-chips">
+                  {upcomingExceptions.map((ex) => (
+                    <span key={ex.exceptionId} className={`exc-blocked-chip${ex.startTime ? " exc-blocked-chip--partial" : ""}`}>
+                      <span className="exc-chip-info">
+                        <span className="exc-chip-date">{fmtExcDate(ex.date)}</span>
+                        {ex.startTime && (
+                          <span className="exc-chip-time">
+                            {fmtExcTime(ex.startTime)} – {fmtExcTime(ex.endTime)}
+                          </span>
+                        )}
+                        {!ex.startTime && (
+                          <span className="exc-chip-time">Full day</span>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        className="exc-chip-remove"
+                        onClick={() => handleRemove(ex.exceptionId)}
+                        title="Remove this block"
+                      >
+                        <i className="pi pi-times" />
+                      </button>
+                    </span>
+                  ))}
+                  {exceptions.length > 10 && (
+                    <span className="exc-blocked-chip exc-blocked-chip--more">
+                      +{exceptions.length - 10} more
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="exc-sidebar-empty">
+                <i className="pi pi-check-circle exc-sidebar-empty-icon" />
+                <div className="exc-sidebar-empty-text">No upcoming blocks</div>
+                <div className="exc-sidebar-empty-hint">
+                  Click any date on the calendar to block it
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Block dialog */}
+      <Dialog
+        header={`Block Period — ${blockDate ? fmtExcDate(blockDate) : ""}`}
+        visible={blockDialog}
+        style={{ width: "34rem", maxWidth: "95vw" }}
+        onHide={() => setBlockDialog(false)}
+      >
+        <div className="exc-dialog-type mb-3">
+          <button
+            type="button"
+            className={`exc-type-btn${fullDay ? " exc-type-btn--active" : ""}`}
+            onClick={() => setFullDay(true)}
+          >
+            <i className="pi pi-ban" />
+            <div>
+              <div className="exc-type-title">Full Day</div>
+              <div className="exc-type-sub">No slots available for the entire day</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            className={`exc-type-btn${!fullDay ? " exc-type-btn--active" : ""}`}
+            onClick={() => setFullDay(false)}
+          >
+            <i className="pi pi-clock" />
+            <div>
+              <div className="exc-type-title">Specific Hours</div>
+              <div className="exc-type-sub">Block only a time range on this day</div>
+            </div>
+          </button>
+        </div>
+
+        {!fullDay && (
+          <div className="exc-time-row">
+            <div className="exc-time-field">
+              <label className="exc-time-label">From</label>
+              <input
+                type="time"
+                className="exc-time-input"
+                value={blockStart}
+                onChange={(e) => setBlockStart(e.target.value)}
+              />
+            </div>
+            <div className="exc-time-sep">→</div>
+            <div className="exc-time-field">
+              <label className="exc-time-label">To</label>
+              <input
+                type="time"
+                className="exc-time-input"
+                value={blockEnd}
+                onChange={(e) => setBlockEnd(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {saveErr && <Message severity="error" text={saveErr} className="w-100 mb-3" />}
+
+        <div className="d-flex justify-content-end gap-2 mt-3">
+          <Button label="Cancel" className="p-button-text" onClick={() => setBlockDialog(false)} />
+          <Button
+            label={saving ? "Saving…" : fullDay ? "Block Full Day" : "Block Hours"}
+            icon="pi pi-ban"
+            severity="danger"
+            onClick={handleSaveBlock}
+            disabled={saving}
+          />
+        </div>
+      </Dialog>
+    </>
   );
 }
 
@@ -610,27 +960,28 @@ function EmptyState({ icon, title, text }) {
   );
 }
 
+const DOW_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 function AvailabilityRuleCard({ rule, onDelete }) {
   return (
-    <div className="meeting-slot-card">
-      <div className="meeting-slot-card-top">
-        <div>
-          <div className="meeting-slot-title">{dayName(rule.dayOfWeek)}</div>
-          <div className="meeting-slot-date">
-            {formatRuleTime(rule.startTime)} - {formatRuleTime(rule.endTime)}
+    <div className="aval-card">
+      <div className="aval-card-top">
+        <div className="aval-day-badge">
+          <span className="aval-day-abbr">{DOW_ABBR[rule.dayOfWeek]}</span>
+        </div>
+        <div className="aval-info">
+          <div className="aval-day-name">{dayName(rule.dayOfWeek)}</div>
+          <div className="aval-time">
+            <i className="pi pi-clock" />
+            {formatRuleTime(rule.startTime)} – {formatRuleTime(rule.endTime)}
           </div>
         </div>
-
-        <Tag value="ACTIVE" severity="success" className="meeting-status-tag" />
+        <Tag value="ACTIVE" severity="success" className="meeting-status-tag ms-auto" />
       </div>
-
-      <div className="meeting-slot-footer">
-        <div className="meeting-slot-note">
-          Students can request 15, 30, 45, or 60 minute meetings in this time range.
-        </div>
-
+      <div className="aval-footer">
+        <span className="aval-note">15 – 60 min slots available in this window</span>
         <Button
-          label="Delete"
+          label="Remove"
           icon="pi pi-trash"
           className="p-button-sm p-button-outlined p-button-danger"
           onClick={() => onDelete(rule.ruleId)}
@@ -684,30 +1035,67 @@ function AdvisorRequestCard({ request, onRespond }) {
   );
 }
 
-function MeetingCard({ meeting }) {
+function MeetingCard({ meeting, isPast = false }) {
+  const hasLink = meeting.meetingLink?.trim();
+  const accent = meetingAccentColor(meeting.title);
+  const ini = nameInitials(meeting.studentName);
+
   return (
-    <div className="meeting-history-row">
-      <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
-        <div className="flex-grow-1">
-          <div className="meeting-history-title">{meeting.title}</div>
-          <div className="meeting-history-meta mt-2">
-            <span className="meeting-history-meta-item">
-              <i className="pi pi-user" />
+    <div className={`mcard${isPast ? " mcard--past" : ""}`} style={{ "--accent": accent }}>
+      <div className="mcard-accent" />
+      <div className="mcard-body">
+        <div className="mcard-timecol">
+          <span className="mcard-time-start">{formatTime(meeting.startAt)}</span>
+          <span className="mcard-time-sep">–</span>
+          <span className="mcard-time-end">{formatTime(meeting.endAt)}</span>
+        </div>
+        <div className="mcard-content">
+          <div className="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+            <div className="mcard-title">{meeting.title}</div>
+            {isPast ? (
+              <span className="mcard-completed-chip">
+                <i className="pi pi-check-circle" /> Completed
+              </span>
+            ) : (
+              <Tag value="UPCOMING" severity="info" className="meeting-status-tag" />
+            )}
+          </div>
+          <div className="mcard-meta">
+            <span className="mcard-person">
+              <span className="mcard-avatar" style={{ background: accent, opacity: isPast ? 0.7 : 1 }}>{ini}</span>
               {meeting.studentName}
             </span>
-            <span className="meeting-history-meta-item">
+            <span className="mcard-date-chip">
               <i className="pi pi-calendar" />
               {formatDateShort(meeting.startAt)}
             </span>
-            <span className="meeting-history-meta-item">
-              <i className="pi pi-clock" />
-              {formatTime(meeting.startAt)} - {formatTime(meeting.endAt)}
-            </span>
           </div>
+          {!isPast && hasLink && (
+            <a href={meeting.meetingLink} target="_blank" rel="noreferrer" className="mcard-join-btn">
+              <i className="pi pi-video" /> Join Meeting
+            </a>
+          )}
+          {!isPast && !hasLink && (
+            <span className="mcard-link-pending">
+              <i className="pi pi-clock" /> Meeting link will be available soon
+            </span>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function meetingAccentColor(title) {
+  const t = (title ?? "").toLowerCase();
+  if (t.includes("progress")) return "#2563eb";
+  if (t.includes("course")) return "#7c3aed";
+  if (t.includes("probation") || t.includes("risk")) return "#dc2626";
+  return "#16a34a";
+}
+
+function nameInitials(name) {
+  return (name ?? "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
 function dayName(day) {

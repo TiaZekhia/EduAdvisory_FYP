@@ -3,6 +3,7 @@ using System;
 using EduAdvisory_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace EduAdvisory_Backend.Migrations
 {
     [DbContext(typeof(EduAdvisoryDbContext))]
-    partial class EduAdvisoryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260608195040_fineTuning")]
+    partial class fineTuning
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -123,23 +126,16 @@ namespace EduAdvisory_Backend.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<TimeSpan?>("EndTime")
-                        .HasColumnType("interval")
-                        .HasColumnName("end_time");
-
                     b.Property<DateOnly>("ExceptionDate")
                         .HasColumnType("date")
                         .HasColumnName("exception_date");
-
-                    b.Property<TimeSpan?>("StartTime")
-                        .HasColumnType("interval")
-                        .HasColumnName("start_time");
 
                     b.HasKey("ExceptionId")
                         .HasName("advisor_availability_exception_pkey");
 
                     b.HasIndex("AdvisorId", "ExceptionDate")
-                        .HasDatabaseName("advisor_availability_exception_advisor_date_idx");
+                        .IsUnique()
+                        .HasDatabaseName("advisor_availability_exception_unique");
 
                     b.ToTable("advisor_availability_exception");
                 });

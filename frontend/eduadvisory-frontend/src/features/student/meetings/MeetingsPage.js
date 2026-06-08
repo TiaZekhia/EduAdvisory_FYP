@@ -265,24 +265,9 @@ export default function MeetingsPage() {
             </div>
 
             {calendarLoading ? (
-              <Skeleton height="10rem" />
+              <Skeleton height="14rem" />
             ) : calendarStartTimes.length ? (
-              <div className="row g-3">
-                {calendarStartTimes.map((item, index) => (
-                  <div className="col-12 col-md-6 col-xl-4" key={`${item.startAt}-${index}`}>
-                    <button
-                      type="button"
-                      className="calendar-interval-card"
-                      onClick={() => handleOpenRequest(item)}
-                    >
-                      <div className="calendar-interval-time">{formatTime(item.startAt)}</div>
-                      <div className="calendar-interval-status">
-                        Allowed: {item.allowedDurations.map((x) => `${x}m`).join(", ")}
-                      </div>
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <TimelineSlotPicker slots={calendarStartTimes} onSelect={handleOpenRequest} />
             ) : (
               <EmptyState
                 icon="pi pi-calendar"
@@ -470,44 +455,42 @@ function EmptyState({ icon, title, text }) {
 }
 
 function UpcomingMeetingRow({ meeting }) {
-  const hasLink = meeting.meetingLink && meeting.meetingLink.trim();
+  const hasLink = meeting.meetingLink?.trim();
+  const accent = meetingAccentColor(meeting.title);
+  const ini = nameInitials(meeting.advisorName);
 
   return (
-    <div className="upcoming-meeting-row">
-      <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
-        <div className="flex-grow-1">
-          <div className="upcoming-meeting-title">{meeting.title}</div>
-
-          <div className="meeting-history-meta mt-2">
-            <span className="meeting-history-meta-item">
+    <div className="mcard" style={{ "--accent": accent }}>
+      <div className="mcard-accent" />
+      <div className="mcard-body">
+        <div className="mcard-timecol">
+          <span className="mcard-time-start">{formatTime(meeting.startAt)}</span>
+          <span className="mcard-time-sep">–</span>
+          <span className="mcard-time-end">{formatTime(meeting.endAt)}</span>
+        </div>
+        <div className="mcard-content">
+          <div className="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+            <div className="mcard-title">{meeting.title}</div>
+            <Tag value={meeting.status} severity="info" className="meeting-status-tag" />
+          </div>
+          <div className="mcard-meta">
+            <span className="mcard-person">
+              <span className="mcard-avatar" style={{ background: accent }}>{ini}</span>
+              {meeting.advisorName}
+            </span>
+            <span className="mcard-date-chip">
               <i className="pi pi-calendar" />
               {formatDateShort(meeting.startAt)}
             </span>
-            <span className="meeting-history-meta-item">
-              <i className="pi pi-clock" />
-              {formatTime(meeting.startAt)} - {formatTime(meeting.endAt)}
-            </span>
-            <span className="meeting-history-meta-item">
-              <i className="pi pi-user" />
-              {meeting.advisorName}
-            </span>
           </div>
-        </div>
-
-        <div className="d-flex flex-column align-items-end gap-2">
-          <Tag value={meeting.status} severity="info" className="meeting-status-tag" />
           {hasLink ? (
-            <a
-              href={meeting.meetingLink}
-              target="_blank"
-              rel="noreferrer"
-              className="meeting-link-btn"
-            >
-              <i className="pi pi-video me-2" />
-              Join
+            <a href={meeting.meetingLink} target="_blank" rel="noreferrer" className="mcard-join-btn">
+              <i className="pi pi-video" /> Join Meeting
             </a>
           ) : (
-            <span className="meeting-link-pending">Link pending</span>
+            <span className="mcard-link-pending">
+              <i className="pi pi-clock" /> Meeting link pending approval
+            </span>
           )}
         </div>
       </div>
@@ -516,32 +499,45 @@ function UpcomingMeetingRow({ meeting }) {
 }
 
 function MeetingHistoryRow({ meeting }) {
-  return (
-    <div className="meeting-history-row">
-      <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
-        <div className="flex-grow-1">
-          <div className="meeting-history-title">{meeting.title}</div>
+  const accent = meetingAccentColor(meeting.title);
+  const ini = nameInitials(meeting.advisorName);
 
-          <div className="meeting-history-meta mt-2">
-            <span className="meeting-history-meta-item">
+  return (
+    <div className="mcard mcard--past" style={{ "--accent": accent }}>
+      <div className="mcard-accent" />
+      <div className="mcard-body">
+        <div className="mcard-timecol">
+          <span className="mcard-time-start">{formatTime(meeting.startAt)}</span>
+          <span className="mcard-time-sep">–</span>
+          <span className="mcard-time-end">{formatTime(meeting.endAt)}</span>
+        </div>
+        <div className="mcard-content">
+          <div className="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+            <div className="mcard-title">{meeting.title}</div>
+            <span className="mcard-completed-chip">
+              <i className="pi pi-check-circle" /> Completed
+            </span>
+          </div>
+          <div className="mcard-meta">
+            <span className="mcard-person">
+              <span className="mcard-avatar" style={{ background: accent, opacity: 0.7 }}>{ini}</span>
+              {meeting.advisorName}
+            </span>
+            <span className="mcard-date-chip">
               <i className="pi pi-calendar" />
               {formatDateShort(meeting.startAt)}
             </span>
-            <span className="meeting-history-meta-item">
-              <i className="pi pi-clock" />
-              {formatTime(meeting.startAt)} - {formatTime(meeting.endAt)}
-            </span>
           </div>
-
-          <div className="mt-3">
-            <div className="meeting-notes-label">
-              <i className="pi pi-file" />
-              <span>Advisor Notes</span>
+          {meeting.notes?.length ? (
+            <div className="mcard-notes">
+              <div className="mcard-notes-label">
+                <i className="pi pi-file-edit" /> Advisor Notes
+              </div>
+              <div className="mcard-notes-text">{meeting.notes}</div>
             </div>
-            <div className="meeting-notes-box mt-2">
-              {meeting.notes?.length ? meeting.notes : "No notes."}
-            </div>
-          </div>
+          ) : (
+            <div className="mcard-no-notes">No advisor notes recorded.</div>
+          )}
         </div>
       </div>
     </div>
@@ -550,71 +546,156 @@ function MeetingHistoryRow({ meeting }) {
 
 function RequestRow({ request, onCancel }) {
   const severity =
-    request.status === "PENDING"
-      ? "warning"
-      : request.status === "REJECTED"
-      ? "danger"
-      : request.status === "ACCEPTED"
-      ? "success"
-      : "info";
+    request.status === "PENDING" ? "warning"
+    : request.status === "REJECTED" ? "danger"
+    : request.status === "ACCEPTED" ? "success"
+    : "info";
+
+  const accent =
+    request.status === "PENDING" ? "#f59e0b"
+    : request.status === "REJECTED" ? "#dc2626"
+    : request.status === "ACCEPTED" ? "#16a34a"
+    : "#6b7280";
+
+  const statusIcon =
+    request.status === "PENDING" ? "pi pi-clock"
+    : request.status === "REJECTED" ? "pi pi-times-circle"
+    : "pi pi-check-circle";
 
   return (
-    <div className={`meeting-request-row request-status-${String(request.status).toLowerCase()}`}>
-      <div className="meeting-request-left">
-        <div className="meeting-request-row-title">Meeting Request</div>
-
-        <div className="meeting-history-meta mt-2">
-          <span className="meeting-history-meta-item">
-            <i className="pi pi-user" />
-            {request.advisorName}
-          </span>
-          <span className="meeting-history-meta-item">
-            <i className="pi pi-calendar" />
-            {formatDateShort(request.startAt)}
-          </span>
-          <span className="meeting-history-meta-item">
-            <i className="pi pi-clock" />
-            {formatTime(request.startAt)} - {formatTime(request.endAt)}
-          </span>
+    <div className="mcard" style={{ "--accent": accent }}>
+      <div className="mcard-accent" />
+      <div className="mcard-body">
+        <div className="mcard-timecol">
+          <span className="mcard-time-start">{formatTime(request.startAt)}</span>
+          <span className="mcard-time-sep">–</span>
+          <span className="mcard-time-end">{formatTime(request.endAt)}</span>
         </div>
-
-        {request.reason ? (
-          <div className="meeting-request-reason-box mt-3">
-            <div className="meeting-request-reason-header">
-              <i className="pi pi-comment" />
-              <span>Your Reason</span>
+        <div className="mcard-content">
+          <div className="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+            <div className="mcard-title">Meeting Request</div>
+            <Tag value={request.status} severity={severity} className="meeting-status-tag" />
+          </div>
+          <div className="mcard-meta">
+            <span className="mcard-person">
+              <i className={statusIcon} style={{ color: accent, fontSize: 14 }} />
+              {request.advisorName}
+            </span>
+            <span className="mcard-date-chip">
+              <i className="pi pi-calendar" />
+              {formatDateShort(request.startAt)}
+            </span>
+          </div>
+          {request.reason && (
+            <div className="mcard-notes">
+              <div className="mcard-notes-label">
+                <i className="pi pi-comment" /> Your Reason
+              </div>
+              <div className="mcard-notes-text">{request.reason}</div>
             </div>
-            <div className="meeting-request-reason-text">{request.reason}</div>
-          </div>
-        ) : null}
-
-        {request.rejectionReason ? (
-          <div className="meeting-request-reject-box mt-3">
-            <div className="meeting-request-reason-header">
-              <i className="pi pi-exclamation-circle" />
-              <span>Advisor Response</span>
+          )}
+          {request.rejectionReason && (
+            <div className="mcard-notes mt-2" style={{ borderColor: "#fecaca", background: "#fff1f2" }}>
+              <div className="mcard-notes-label" style={{ color: "#b91c1c" }}>
+                <i className="pi pi-exclamation-circle" style={{ color: "#b91c1c" }} /> Advisor Response
+              </div>
+              <div className="mcard-notes-text" style={{ color: "#9f1239" }}>{request.rejectionReason}</div>
             </div>
-            <div className="meeting-request-reason-text">{request.rejectionReason}</div>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="meeting-request-right">
-        <Tag value={request.status} severity={severity} className="meeting-status-tag" />
-
-        {request.status === "PENDING" ? (
-          <div className="meeting-request-actions">
-            <Button
-              label="Cancel"
-              icon="pi pi-times"
-              className="p-button-sm p-button-outlined p-button-danger"
-              onClick={() => onCancel(request.requestId)}
-            />
-          </div>
-        ) : null}
+          )}
+          {request.status === "PENDING" && (
+            <div className="mt-3">
+              <Button
+                label="Cancel Request"
+                icon="pi pi-times"
+                className="p-button-sm p-button-outlined p-button-danger"
+                onClick={() => onCancel(request.requestId)}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
+}
+
+/* ─── Timeline Slot Picker ────────────────────────────────────── */
+function TimelineSlotPicker({ slots, onSelect }) {
+  const groups = [
+    {
+      key: "morning",
+      label: "Morning",
+      icon: "pi pi-sun",
+      items: slots.filter((s) => new Date(s.startAt).getHours() < 12),
+    },
+    {
+      key: "afternoon",
+      label: "Afternoon",
+      icon: "pi pi-cloud-sun",
+      items: slots.filter((s) => {
+        const h = new Date(s.startAt).getHours();
+        return h >= 12 && h < 17;
+      }),
+    },
+    {
+      key: "evening",
+      label: "Evening",
+      icon: "pi pi-moon",
+      items: slots.filter((s) => new Date(s.startAt).getHours() >= 17),
+    },
+  ].filter((g) => g.items.length > 0);
+
+  return (
+    <div className="tl-container">
+      {groups.map((group, gi) => (
+        <div key={group.key}>
+          <div className={`tl-period-header${gi > 0 ? " tl-period-header--border" : ""}`}>
+            <i className={group.icon} />
+            <span>{group.label}</span>
+            <span className="tl-period-count">{group.items.length} slot{group.items.length !== 1 ? "s" : ""}</span>
+          </div>
+          {group.items.map((slot, si) => {
+            const maxDur = Math.max(...slot.allowedDurations);
+            return (
+              <button
+                key={`${slot.startAt}-${si}`}
+                type="button"
+                className="tl-slot-row"
+                onClick={() => onSelect(slot)}
+              >
+                <div className="tl-slot-time">{formatTime(slot.startAt)}</div>
+                <div className="tl-slot-bar">
+                  <div
+                    className="tl-slot-bar-fill"
+                    style={{ width: `${(maxDur / 60) * 100}%` }}
+                  />
+                </div>
+                <div className="tl-slot-durations">
+                  {slot.allowedDurations.map((d) => (
+                    <span key={d} className="tl-dur-pill">
+                      {d < 60 ? `${d}m` : "1h"}
+                    </span>
+                  ))}
+                </div>
+                <i className="pi pi-chevron-right tl-slot-arrow" />
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function meetingAccentColor(title) {
+  const t = (title ?? "").toLowerCase();
+  if (t.includes("progress")) return "#2563eb";
+  if (t.includes("course")) return "#7c3aed";
+  if (t.includes("probation") || t.includes("risk")) return "#dc2626";
+  return "#16a34a";
+}
+
+function nameInitials(name) {
+  return (name ?? "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
 function toDateOnly(date) {

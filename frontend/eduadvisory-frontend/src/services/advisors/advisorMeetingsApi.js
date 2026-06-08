@@ -11,4 +11,8 @@ export const advisorMeetingsApi = {
 
   getUpcoming: () => apiClient.get("/advisor-meetings/upcoming"),
   getHistory: () => apiClient.get("/advisor-meetings/history"),
+
+  getExceptions: () => apiClient.get("/advisor-meetings/exceptions"),
+  addException: (payload) => apiClient.post("/advisor-meetings/exceptions", payload),
+  removeException: (id) => apiClient.delete(`/advisor-meetings/exceptions/${id}`),
 };
