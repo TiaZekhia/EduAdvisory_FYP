@@ -1,38 +1,37 @@
+import { useState } from "react";
+
 const formatDocumentType = (type) => {
   if (type === "study_guide") return "Study Guide";
-  if (type === "course_syllabus") return "Course Syllabus";
-  return type;
+  if (type === "course_syllabus") return "Syllabus";
+  return type ?? "";
 };
 
 const AiSourcesPanel = ({ sources }) => {
+  const [open, setOpen] = useState(false);
+
   if (!sources?.length) return null;
 
   return (
-    <div className="ai-sources-panel">
-      <strong>Sources</strong>
+    <div>
+      <button className="ai-sources-toggle" onClick={() => setOpen((o) => !o)}>
+        <i className={`pi ${open ? "pi-chevron-up" : "pi-chevron-down"}`} />
+        {sources.length} source{sources.length !== 1 ? "s" : ""}
+      </button>
 
-      {sources.map((source) => (
-        <div key={source.chunkId} className="ai-source-card">
-          <div className="ai-source-title">{source.title}</div>
-          <div className="ai-source-meta">
-            {formatDocumentType(source.documentType)} • {source.courseCode}
-          </div>
-
-          {source.sectionTitle && (
-            <div className="ai-source-section">
-              Section: {source.sectionTitle}
-            </div>
-          )}
-
-          {source.pageNumber && (
-            <div className="ai-source-page">Page: {source.pageNumber}</div>
-          )}
-
-          <div className="ai-source-score">
-            Similarity: {source.similarityScore.toFixed(2)}
-          </div>
+      {open && (
+        <div className="ai-sources-chips">
+          {sources.map((src) => (
+            <span key={src.chunkId} className="ai-source-chip" title={src.title}>
+              <i className="pi pi-file ai-source-chip-icon" />
+              <span>
+                {src.courseCode && <strong>{src.courseCode} · </strong>}
+                {formatDocumentType(src.documentType)}
+                {src.pageNumber && ` · p.${src.pageNumber}`}
+              </span>
+            </span>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 };
