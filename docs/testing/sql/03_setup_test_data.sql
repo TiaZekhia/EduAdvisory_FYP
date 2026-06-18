@@ -103,8 +103,11 @@ BEGIN
 
     -- 3e. Ensure conversation exists between student and advisor (required for message delivery)
     INSERT INTO conversation (advisor_id, student_id, created_at)
-    VALUES (v_advisor_id, v_student_id, NOW())
-    ON CONFLICT ON CONSTRAINT conversation_advisor_student_unique DO NOTHING;
+    SELECT v_advisor_id, v_student_id, NOW()
+    WHERE NOT EXISTS (
+        SELECT 1 FROM conversation
+        WHERE advisor_id = v_advisor_id AND student_id = v_student_id
+    );
 
     -- ============================================================
     -- TEST 4 PREP — Advisor availability rule for meeting requests

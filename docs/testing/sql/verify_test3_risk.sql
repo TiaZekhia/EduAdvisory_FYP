@@ -13,7 +13,7 @@ SELECT
     s.academic_status,
     s.current_semester
 FROM sis_student s
-WHERE s.student_id = (SELECT linked_student_id FROM users WHERE username = 'tia.student');
+WHERE s.student_id = (SELECT linked_student_id FROM users WHERE username = '202110001');
 -- Expected: current_gpa=52.00, academic_status='PROBATION'
 
 -- 2. Verify absences are at maximum (absenceRisk = 1.0)
@@ -24,7 +24,7 @@ SELECT
     CASE WHEN ca.absences_count >= ca.max_absences THEN 'HIGH RISK' ELSE 'OK' END AS absence_status,
     ROUND((ca.absences_count::numeric / NULLIF(ca.max_absences,0)) * 100, 1) AS absence_pct
 FROM sis_course_assessment ca
-WHERE ca.student_id = (SELECT linked_student_id FROM users WHERE username = 'tia.student')
+WHERE ca.student_id = (SELECT linked_student_id FROM users WHERE username = '202110001')
 ORDER BY ca.course_code;
 -- Expected: all rows show absence_pct = 100.0
 
@@ -40,7 +40,7 @@ SELECT
         ELSE 'NO RISK'
     END AS grade_risk
 FROM sis_student_grades sg
-WHERE sg.student_id = (SELECT linked_student_id FROM users WHERE username = 'tia.student')
+WHERE sg.student_id = (SELECT linked_student_id FROM users WHERE username = '202110001')
 ORDER BY sg.course_code, sg.component_name;
 -- Expected: all grades = 28.00, grade_risk = 'HIGH RISK'
 
@@ -53,7 +53,7 @@ SELECT
     r.risk_score,
     r.calculated_at
 FROM student_risk r
-WHERE r.student_id = (SELECT linked_student_id FROM users WHERE username = 'tia.student')
+WHERE r.student_id = (SELECT linked_student_id FROM users WHERE username = '202110001')
 ORDER BY r.calculated_at DESC;
 -- Expected: at least 1 row per enrolled course, risk_level='HIGH', risk_score >= 70
 
@@ -69,7 +69,7 @@ SELECT
     LEFT(l.notes, 100) AS notes_preview,
     l.created_at
 FROM risk_intervention_log l
-WHERE l.student_id = (SELECT linked_student_id FROM users WHERE username = 'tia.student')
+WHERE l.student_id = (SELECT linked_student_id FROM users WHERE username = '202110001')
 ORDER BY l.created_at;
 -- Expected:
 --   Row 1: action_type='HIGH_RISK_MEETING_RECOMMENDATION', status='COMPLETED'
@@ -86,7 +86,7 @@ SELECT
     c.student_id
 FROM chat_message m
 JOIN conversation c ON c.conversation_id = m.conversation_id
-WHERE c.student_id = (SELECT linked_student_id FROM users WHERE username = 'tia.student')
+WHERE c.student_id = (SELECT linked_student_id FROM users WHERE username = '202110001')
 ORDER BY m.sent_at DESC
 LIMIT 5;
 -- Expected: message content starts with '[HIGH RISK ALERT]' or '[MEDIUM RISK' or '[LOW RISK'
@@ -97,6 +97,6 @@ SELECT
     status,
     COUNT(*) AS count
 FROM risk_intervention_log
-WHERE student_id = (SELECT linked_student_id FROM users WHERE username = 'tia.student')
+WHERE student_id = (SELECT linked_student_id FROM users WHERE username = '202110001')
 GROUP BY action_type, status
 ORDER BY action_type, status;
