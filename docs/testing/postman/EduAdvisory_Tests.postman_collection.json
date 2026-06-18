@@ -1,0 +1,578 @@
+{
+  "info": {
+    "name": "EduAdvisory — Chapter VI Tests",
+    "description": "Complete test collection for FYP Chapter VI. Set {{baseUrl}}, {{studentToken}}, {{advisorToken}}, {{adminToken}}, {{automationToken}} as environment variables before running.",
+    "_postman_id": "eduadvisory-fyp-tests-v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",         "value": "http://localhost:5267/api" },
+    { "key": "keycloakUrl",     "value": "http://localhost:8080" },
+    { "key": "realm",           "value": "EduAdvisory" },
+    { "key": "clientId",        "value": "eduadvisory-frontend" },
+    { "key": "studentToken",    "value": "PASTE_STUDENT_JWT_HERE" },
+    { "key": "advisorToken",    "value": "PASTE_ADVISOR_JWT_HERE" },
+    { "key": "adminToken",      "value": "PASTE_ADMIN_JWT_HERE" },
+    { "key": "automationToken", "value": "PASTE_AUTOMATIONADMIN_JWT_HERE" },
+    { "key": "requestId",       "value": "0",   "description": "Set from T4-2 response" },
+    { "key": "sessionId",       "value": "0",   "description": "Set from T2-1 response" }
+  ],
+  "item": [
+
+    {
+      "name": "🔑 Authentication",
+      "item": [
+        {
+          "name": "T1-1 Get Token (Student)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "    var json = pm.response.json();",
+            "    pm.collectionVariables.set('studentToken', json.access_token);",
+            "    pm.test('Student token received', () => pm.expect(json.access_token).to.not.be.empty);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "password" },
+                { "key": "client_id",  "value": "{{clientId}}" },
+                { "key": "username",   "value": "tia.student" },
+                { "key": "password",   "value": "REPLACE_WITH_PASSWORD" }
+              ]
+            }
+          },
+          "response": [],
+          "_expected": "200 OK — access_token in body"
+        },
+        {
+          "name": "T1-2 Get Token (Advisor)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "    pm.collectionVariables.set('advisorToken', pm.response.json().access_token);",
+            "    pm.test('Advisor token received', () => pm.expect(pm.response.json().access_token).to.not.be.empty);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "password" },
+                { "key": "client_id",  "value": "{{clientId}}" },
+                { "key": "username",   "value": "ahmad.advisor" },
+                { "key": "password",   "value": "REPLACE_WITH_PASSWORD" }
+              ]
+            }
+          },
+          "response": [],
+          "_expected": "200 OK — access_token in body"
+        },
+        {
+          "name": "T1-3 Get Token (Admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "    pm.collectionVariables.set('adminToken', pm.response.json().access_token);",
+            "    pm.test('Admin token received', () => pm.expect(pm.response.json().access_token).to.not.be.empty);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "password" },
+                { "key": "client_id",  "value": "{{clientId}}" },
+                { "key": "username",   "value": "admin" },
+                { "key": "password",   "value": "REPLACE_WITH_PASSWORD" }
+              ]
+            }
+          },
+          "response": [],
+          "_expected": "200 OK — access_token in body"
+        },
+        {
+          "name": "T1-4 Get Token (AutomationAdmin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "    pm.collectionVariables.set('automationToken', pm.response.json().access_token);",
+            "    pm.test('AutomationAdmin token received', () => pm.expect(pm.response.json().access_token).to.not.be.empty);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "password" },
+                { "key": "client_id",  "value": "{{clientId}}" },
+                { "key": "username",   "value": "n8n_bot" },
+                { "key": "password",   "value": "REPLACE_WITH_PASSWORD" }
+              ]
+            }
+          },
+          "response": [],
+          "_expected": "200 OK — access_token in body"
+        },
+        {
+          "name": "T1-5 GET Profile (valid STUDENT token) → 200",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Role is STUDENT', () => pm.expect(pm.response.json().role).to.equal('STUDENT'));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/profile/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — {role: 'STUDENT', username: 'tia.student', ...}"
+        },
+        {
+          "name": "T1-6 GET Admin Users (STUDENT token) → 403",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 403 Forbidden', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }]
+          },
+          "response": [],
+          "_expected": "403 Forbidden — STUDENT cannot access admin endpoint"
+        },
+        {
+          "name": "T1-7 GET Profile (no token) → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 401 Unauthorized', () => pm.response.to.have.status(401));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/profile/me",
+            "header": []
+          },
+          "response": [],
+          "_expected": "401 Unauthorized — no token provided"
+        },
+        {
+          "name": "T1-8 POST Automation Run (STUDENT token) → 403",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 403 Forbidden', () => pm.response.to.have.status(403));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/automation/risk-interventions/run",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }]
+          },
+          "response": [],
+          "_expected": "403 Forbidden — only AutomationAdmin can call this"
+        },
+        {
+          "name": "T1-9 GET Admin Users (ADMIN token) → 200",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — list of all users"
+        }
+      ]
+    },
+
+    {
+      "name": "🤖 AI Assistant",
+      "item": [
+        {
+          "name": "T2-1 AI Chat (non-stream) — RAG question",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.collectionVariables.set('sessionId', json.sessionId);",
+            "pm.test('Response source is rag or plugin', () => {",
+            "    pm.expect(['rag','plugin','not_supported']).to.include(json.responseSource);",
+            "});",
+            "pm.test('Answer is not empty', () => pm.expect(json.answer).to.not.be.empty);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/student-ai/chat",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{studentToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": null,\n  \"message\": \"What are the grading components for my enrolled course and what percentage is each worth?\",\n  \"courseCode\": null\n}"
+            }
+          },
+          "response": [],
+          "_expected": "200 — {sessionId, answer, responseSource:'rag', topSimilarityScore>=0.75, sources:[...]}"
+        },
+        {
+          "name": "T2-2 AI Chat (non-stream) — Plugin question",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.test('Response source is plugin', () => pm.expect(json.responseSource).to.equal('plugin'));",
+            "pm.test('Answer contains student data', () => pm.expect(json.answer.length).to.be.above(10));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/student-ai/chat",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{studentToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": {{sessionId}},\n  \"message\": \"How many courses have I passed so far and what is my current GPA?\",\n  \"courseCode\": null\n}"
+            }
+          },
+          "response": [],
+          "_expected": "200 — {responseSource:'plugin', answer contains real GPA + course count}"
+        },
+        {
+          "name": "T2-3 AI Chat (non-stream) — Not-supported question",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.test('Response source is not_supported', () => pm.expect(json.responseSource).to.equal('not_supported'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/student-ai/chat",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{studentToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": {{sessionId}},\n  \"message\": \"What is the weather like in Beirut today?\",\n  \"courseCode\": null\n}"
+            }
+          },
+          "response": [],
+          "_expected": "200 — {responseSource:'not_supported', topSimilarityScore < 0.75}"
+        },
+        {
+          "name": "T2-4 GET Admin AI Documents",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var docs = pm.response.json();",
+            "pm.test('At least one document exists', () => pm.expect(docs.length).to.be.above(0));",
+            "pm.test('At least one document is Processed', () => {",
+            "    var processed = docs.filter(d => d.status === 'Processed');",
+            "    pm.expect(processed.length).to.be.above(0);",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/ai-documents",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — list with at least 1 document having status='Processed'"
+        },
+        {
+          "name": "T2-5 AI Embedding Health Check",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ai-health/embedding-test",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — confirms OpenAI embedding API is reachable"
+        }
+      ]
+    },
+
+    {
+      "name": "⚠️ Risk Automation",
+      "item": [
+        {
+          "name": "T3-1 GET Student Risk Assessment (student view)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.test('Risk level is present', () => pm.expect(json.riskLevel).to.not.be.undefined);"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/Students/me/risk-assessment",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — {riskLevel, riskScore, ...}"
+        },
+        {
+          "name": "T3-2 POST Run Risk Automation (AutomationAdmin) → 200",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.test('ProcessedStudents > 0', () => pm.expect(json.processedStudents).to.be.above(0));",
+            "pm.test('Items array exists', () => pm.expect(json.items).to.be.an('array'));",
+            "var highRisk = json.items.filter(i => i.riskLevel === 'HIGH' && i.status === 'COMPLETED');",
+            "pm.test('At least one HIGH risk COMPLETED', () => pm.expect(highRisk.length).to.be.above(0));",
+            "console.log('Automation result:', JSON.stringify(json, null, 2));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/automation/risk-interventions/run",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{automationToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" }
+          },
+          "response": [],
+          "_expected": "200 — {processedStudents, highRiskMeetingRecommendations, skippedDuplicates, items:[{riskLevel:'HIGH', status:'COMPLETED', actionTaken:'HIGH_RISK_MEETING_RECOMMENDATION'}]}"
+        },
+        {
+          "name": "T3-3 POST Run Risk Automation Again (cooldown test)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.test('SkippedDuplicates > 0', () => pm.expect(json.skippedDuplicates).to.be.above(0));",
+            "var skipped = json.items.filter(i => i.status === 'SKIPPED_DUPLICATE');",
+            "pm.test('Test student is SKIPPED_DUPLICATE', () => pm.expect(skipped.length).to.be.above(0));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/automation/risk-interventions/run",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{automationToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" }
+          },
+          "response": [],
+          "_expected": "200 — {skippedDuplicates >= 1, test student shows status:'SKIPPED_DUPLICATE'}"
+        },
+        {
+          "name": "T3-4 GET Advisor Risk Assessment View",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/advisors/me/students/REPLACE_WITH_STUDENT_ID/risk-assessment",
+              "host": ["{{baseUrl}}"],
+              "path": ["advisors","me","students","REPLACE_WITH_STUDENT_ID","risk-assessment"]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{advisorToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — risk details from advisor perspective"
+        }
+      ]
+    },
+
+    {
+      "name": "📅 Meetings",
+      "item": [
+        {
+          "name": "T4-1 GET Google Auth Status (Advisor)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.test('Google is connected', () => pm.expect(json.isConnected).to.be.true);",
+            "console.log('Google connected email:', json.connectedEmail);"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/shared-google-auth/status",
+            "header": [{ "key": "Authorization", "value": "Bearer {{advisorToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — {isConnected: true, connectedEmail: '...'}"
+        },
+        {
+          "name": "T4-2 GET Advisor Calendar (Student browses slots)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var slots = pm.response.json();",
+            "pm.test('At least one slot available', () => pm.expect(slots.length).to.be.above(0));",
+            "console.log('Available slots:', JSON.stringify(slots, null, 2));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/student-meetings/my/advisor-calendar?date=REPLACE_WITH_YYYY-MM-DD",
+              "query": [{ "key": "date", "value": "REPLACE_WITH_YYYY-MM-DD" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — [{startAt, allowedDurations:[15,30,45,60]}, ...] — list of available slots"
+        },
+        {
+          "name": "T4-3 POST Create Meeting Request (Student)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200 or 201', () => {",
+            "    pm.expect([200,201]).to.include(pm.response.code);",
+            "});",
+            "var json = pm.response.json();",
+            "if (json.requestId) pm.collectionVariables.set('requestId', json.requestId);",
+            "console.log('Created request ID:', json.requestId);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/student-meetings/my/requests",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{studentToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startAt\": \"REPLACE_WITH_FUTURE_DATETIME+03:00\",\n  \"durationMinutes\": 30,\n  \"reason\": \"Discuss semester course selection and academic planning for the upcoming term\"\n}"
+            }
+          },
+          "response": [],
+          "_expected": "200 — {requestId, status:'PENDING', ...}"
+        },
+        {
+          "name": "T4-4 GET Pending Requests (Advisor)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var reqs = pm.response.json();",
+            "pm.test('At least one pending request', () => pm.expect(reqs.length).to.be.above(0));",
+            "if (reqs.length > 0) pm.collectionVariables.set('requestId', reqs[0].requestId);"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/advisor-meetings/requests/pending",
+            "header": [{ "key": "Authorization", "value": "Bearer {{advisorToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — [{requestId, studentName, startAt, reason, status:'PENDING'}, ...]"
+        },
+        {
+          "name": "T4-5 POST Accept Meeting Request (Advisor) → creates Google Meet",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.test('Meet link returned', () => pm.expect(json.meetLink).to.include('meet.google.com'));",
+            "pm.test('Success message', () => pm.expect(json.message).to.include('accepted'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/advisor-meetings/requests/{{requestId}}/respond",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{advisorToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"ACCEPTED\"\n}"
+            }
+          },
+          "response": [],
+          "_expected": "200 — {message: 'Meeting request accepted and Google Meet link generated.', meetLink: 'https://meet.google.com/xxx-xxxx-xxx'}"
+        },
+        {
+          "name": "T4-6 GET Upcoming Meetings (Student)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var meetings = pm.response.json();",
+            "pm.test('At least one upcoming meeting', () => pm.expect(meetings.length).to.be.above(0));",
+            "var withLink = meetings.filter(m => m.meetingLink && m.meetingLink.includes('meet.google.com'));",
+            "pm.test('Meeting has Google Meet link', () => pm.expect(withLink.length).to.be.above(0));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/student-meetings/my/upcoming",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — [{meetingId, startAt, meetingLink:'https://meet.google.com/...', status:'UPCOMING'}]"
+        }
+      ]
+    },
+
+    {
+      "name": "📚 Course Planning",
+      "item": [
+        {
+          "name": "T5-1 GET Course Plans (Student) — generates 3 plans",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "pm.test('At least 1 plan returned', () => pm.expect(json.length).to.be.above(0));",
+            "pm.test('Plan has semesters', () => pm.expect(json[0].semesters).to.be.an('array'));",
+            "pm.test('Plan has metrics', () => pm.expect(json[0].metrics).to.exist);",
+            "console.log('Number of plans:', json.length);",
+            "console.log('Strategies:', json.map(p => p.strategy));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/Students/me/course-plan/plans?count=3",
+              "query": [{ "key": "count", "value": "3" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — [{planId, strategy:'Balanced'|'FastBlockers'|'StudyGuideStrict', metrics:{creditsRemaining, estimatedGraduationTerm}, semesters:[{plannedSemester, totalCredits, courses:[...]}]}]"
+        },
+        {
+          "name": "T5-2 GET Course Plan AI Insights — AI ranks plans",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "var json = pm.response.json();",
+            "var insights = json.insights || json;",
+            "pm.test('BestPlanIndex is set', () => pm.expect(insights.bestPlanIndex).to.be.a('number'));",
+            "pm.test('PlanInsights array not empty', () => pm.expect(insights.planInsights.length).to.be.above(0));",
+            "var first = insights.planInsights[0];",
+            "pm.test('Plan has score', () => pm.expect(first.score).to.be.above(0));",
+            "pm.test('Plan has explanation', () => pm.expect(first.explanation).to.not.be.empty);",
+            "console.log('Best plan index:', insights.bestPlanIndex);",
+            "console.log('Scores:', insights.planInsights.map(p => p.score));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/Students/me/course-plan/insights?count=3",
+              "query": [{ "key": "count", "value": "3" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — {insights:{bestPlanIndex:N, bestPlanSummary:'...', planInsights:[{planIndex, score, explanation, pros:[], cons:[], warnings:[]}]}}"
+        },
+        {
+          "name": "T5-3 GET Advisor View of Student Plans",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/advisors/me/students/REPLACE_WITH_STUDENT_ID/course-plan/plans?count=3",
+              "query": [{ "key": "count", "value": "3" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{advisorToken}}" }]
+          },
+          "response": [],
+          "_expected": "200 — same plan structure, advisor's view of the student"
+        }
+      ]
+    }
+
+  ]
+}
