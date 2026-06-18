@@ -28,9 +28,9 @@ SELECT
         WHEN u.role IN ('ADMIN','AutomationAdmin')                   THEN 'N/A'
         ELSE 'MISSING LINK'
     END AS link_status
-FROM users
-WHERE role IN ('STUDENT', 'ADVISOR', 'ADMIN', 'AutomationAdmin')
-ORDER BY role, username;
+FROM users u
+WHERE u.role IN ('STUDENT', 'ADVISOR', 'ADMIN', 'AutomationAdmin')
+ORDER BY u.role, u.username;
 
 -- 3. Confirm student links to the expected student row
 SELECT

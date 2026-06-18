@@ -1,16 +1,19 @@
 ﻿using EduAdvisory_Backend.DTOs.CoursePlan;
 using EduAdvisory_Backend.Interfaces.Repositories;
 using EduAdvisory_Backend.Interfaces.Services;
+using EduAdvisory_Backend.Models;
 
 namespace EduAdvisory_Backend.Services
 {
     public class CoursePlanService : ICoursePlanService
     {
         private readonly IStudentRepository _studentRepo;
+        private readonly EduAdvisoryDbContext _context;
 
-        public CoursePlanService(IStudentRepository studentRepo)
+        public CoursePlanService(IStudentRepository studentRepo, EduAdvisoryDbContext context)
         {
             _studentRepo = studentRepo;
+            _context = context;
         }
 
         private static bool IsFall(int semesterNumber) => semesterNumber % 2 == 1;
@@ -123,6 +126,30 @@ namespace EduAdvisory_Backend.Services
 
                 if (plan.Semesters.Any())
                     plans.Add(plan);
+            }
+
+            // Persist the first (Balanced) plan to the database
+            if (plans.Any())
+            {
+                _context.GeneratedStudyPlans.RemoveRange(
+                    _context.GeneratedStudyPlans.Where(p => p.StudentId == studentId));
+
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                var firstPlan = plans[0];
+                foreach (var semester in firstPlan.Semesters)
+                {
+                    foreach (var course in semester.Courses)
+                    {
+                        _context.GeneratedStudyPlans.Add(new GeneratedStudyPlan
+                        {
+                            StudentId = studentId,
+                            CourseCode = course.CourseCode,
+                            PlannedSemester = semester.PlannedSemester,
+                            GenerationDate = today
+                        });
+                    }
+                }
+                _context.SaveChanges();
             }
 
             return plans;
