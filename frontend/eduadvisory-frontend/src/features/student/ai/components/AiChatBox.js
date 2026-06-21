@@ -73,7 +73,7 @@ const AiChatBox = () => {
             const last = { ...updated[updated.length - 1] };
             last.responseSource = metadata.responseSource;
             last.topSimilarityScore = metadata.topSimilarityScore;
-            last.sources = metadata.sources || [];
+            last.sources = metadata.responseSource === "rag" ? (metadata.sources || []) : [];
             updated[updated.length - 1] = last;
             return updated;
           });
