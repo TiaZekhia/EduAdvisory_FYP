@@ -42,8 +42,9 @@ namespace EduAdvisory_Backend.Repositories
 
         public SisStudent GetByUsername(string username)
         {
+            var lower = username.ToLowerInvariant();
             var user = _context.Users
-                .FirstOrDefault(u => u.Username == username);
+                .FirstOrDefault(u => u.Username != null && u.Username.ToLower() == lower);
 
             if (user == null || user.LinkedStudentId == null)
                 return null;

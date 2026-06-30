@@ -55,8 +55,9 @@ export default function AdvisorMessagesPage() {
     try {
       const connection = await startChatConnection(accessToken);
 
-      // Don't use connection.off("ReceiveMessage") - provider needs it
-      connection.on("ReceiveMessage", (message) => {
+      // Use named handlers so connection.off(event, handler) removes only
+      // this page's listener without touching the provider's listener.
+      function onReceiveMessage(message) {
         setMessages((prev) => {
           if (!prev || prev.some((m) => m.messageId === message.messageId)) return prev || [];
           if (
@@ -69,16 +70,21 @@ export default function AdvisorMessagesPage() {
           return prev;
         });
         loadStudents(accessToken);
-      });
+      }
 
-      // Don't use connection.off("MessageSent") - provider needs it
-      connection.on("MessageSent", (message) => {
+      function onMessageSent(message) {
         setMessages((prev) => {
           if (!prev) return [message];
           if (prev.some((m) => m.messageId === message.messageId)) return prev;
           return [...prev, message];
         });
-      });
+      }
+
+      connection.off("ReceiveMessage", onReceiveMessage);
+      connection.on("ReceiveMessage", onReceiveMessage);
+      connection.off("MessageSent", onMessageSent);
+      connection.on("MessageSent", onMessageSent);
+
       connection.off("MessagesRead");
       connection.on("MessagesRead", (data) => {
         setMessages((prev) =>
@@ -147,7 +153,7 @@ export default function AdvisorMessagesPage() {
     <div className="msg-page">
       <BroadcastForm token={token} />
 
-      <div className="chat-panel" style={{ height: "calc(100vh - 230px)" }}>
+      <div className="chat-panel" style={{ flex: 1, minHeight: 0 }}>
         <StudentList
           students={students}
           selectedStudentId={selectedStudent?.studentId}

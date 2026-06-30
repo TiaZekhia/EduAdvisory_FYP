@@ -10,6 +10,7 @@ export const advisorMeetingsApi = {
     apiClient.post(`/advisor-meetings/requests/${id}/respond`, payload),
 
   getUpcoming: () => apiClient.get("/advisor-meetings/upcoming"),
+  cancelMeeting: (id, reason) => apiClient.delete(`/advisor-meetings/upcoming/${id}`, { data: { reason } }),
   getHistory: () => apiClient.get("/advisor-meetings/history"),
 
   getExceptions: () => apiClient.get("/advisor-meetings/exceptions"),

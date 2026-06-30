@@ -145,14 +145,35 @@ export default function BroadcastForm({ token }) {
     }
   }
 
+  const [open, setOpen] = useState(false);
+
   return (
     <>
       <Toast ref={toast} position="top-right" />
 
-      <form onSubmit={handleSubmit} className="broadcast-form-card">
-        <div className="broadcast-form-card__body">
-          <div className="broadcast-form-card__title">Broadcast message</div>
+      <div className="broadcast-form-card">
+        {/* ── Collapsed header (always visible) ── */}
+        <button
+          type="button"
+          className="broadcast-toggle-bar"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+        >
+          <span className="broadcast-toggle-bar__left">
+            <i className="pi pi-megaphone" style={{ fontSize: "1rem" }} />
+            <span className="broadcast-toggle-bar__label">Broadcast message</span>
+            {selectedStudentIds.length > 0 && (
+              <span className="broadcast-toggle-bar__badge">
+                {selectedStudentIds.length} student{selectedStudentIds.length !== 1 ? "s" : ""} selected
+              </span>
+            )}
+          </span>
+          <i className={`pi ${open ? "pi-chevron-up" : "pi-chevron-down"}`} />
+        </button>
 
+        {/* ── Expandable body ── */}
+        {open && (
+        <form onSubmit={handleSubmit} className="broadcast-form-card__body">
           <div className="broadcast-form-card__row">
             <input
               className="msg-input"
@@ -387,8 +408,9 @@ export default function BroadcastForm({ token }) {
               )}
             </div>
           </div>
-        </div>
-      </form>
+        </form>
+        )}
+      </div>
     </>
   );
 }

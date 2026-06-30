@@ -30,6 +30,7 @@ export default function AdminUserManagementPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [formKey, setFormKey] = useState(0);
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -165,6 +166,7 @@ export default function AdminUserManagementPage() {
       showSuccess("User created successfully.");
       setUsername("");
       setPassword("");
+      setFormKey((k) => k + 1);
       await Promise.all([loadUsers(), loadAvailableLinks(role)]);
     } catch (error) {
       console.error(error);
@@ -311,18 +313,20 @@ export default function AdminUserManagementPage() {
 
           <div className="col-12 col-lg-2">
             <label className="admin-form-label">Username</label>
-            <InputText value={username} onChange={(event) => setUsername(event.target.value)} className="w-100" />
+            <InputText key={`username-${formKey}`} value={username} onChange={(event) => setUsername(event.target.value)} className="w-100" autoComplete="off" />
           </div>
 
           <div className="col-12 col-lg-2">
             <label className="admin-form-label">Password</label>
             <Password
+              key={`password-${formKey}`}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               feedback={false}
               toggleMask
               className="w-100 admin-password"
               inputClassName="w-100"
+              inputProps={{ autoComplete: "new-password" }}
             />
           </div>
         </div>

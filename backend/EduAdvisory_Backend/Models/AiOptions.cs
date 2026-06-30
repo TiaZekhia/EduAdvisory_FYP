@@ -7,5 +7,5 @@ public class AiOptions
 
     public int MaxRetrievedChunks { get; set; } = 5;
 
-    public double MinSimilarityThreshold { get; set; } = 0.75;
+    public double MinSimilarityThreshold { get; set; } = 0.55;
 }

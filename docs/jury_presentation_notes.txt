@@ -1,0 +1,1241 @@
+================================================================================
+              EduAdvisory — JURY PRESENTATION NOTES
+              Academic Planning & Risk Assessment Features
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — ACADEMIC PLANNING FEATURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT IS IT?
+-----------
+The Academic Planning feature generates a personalized, semester-by-semester
+course roadmap for each student — from their current semester all the way to
+graduation. It runs 3 different scheduling strategies and uses AI (OpenAI) to
+rank and explain them.
+
+
+────────────────────────────────────────────────────────────────────────────────
+1. DATA COLLECTION
+────────────────────────────────────────────────────────────────────────────────
+
+Before generating any plan, the system collects:
+
+  • Student profile      → program code, current semester, academic status, GPA
+  • Passed courses       → courses already completed successfully
+  • Failed-not-retaken   → courses failed and not yet retaken (must be prioritized)
+  • Study guide          → official program curriculum (recommended semester per course)
+  • Prerequisites map    → which courses must be done before each course
+  • Course metadata      → course names and credit values
+
+Credit limit rule:
+  ┌─────────────────────────────────────┐
+  │  PROBATION status  →  max 16 credits │
+  │  NORMAL status     →  max 18 credits │
+  └─────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────
+2. PLAN GENERATION — 3 STRATEGIES
+────────────────────────────────────────────────────────────────────────────────
+
+The system builds 3 independent plans using different course-sorting priorities.
+
+  ┌──────────────────┬──────────────────────────────────────────────────────────┐
+  │ Strategy         │ Priority Logic                                           │
+  ├──────────────────┼──────────────────────────────────────────────────────────┤
+  │ Balanced         │ Retakes first → lowest recommended semester              │
+  │                  │ → higher credits first                                   │
+  ├──────────────────┼──────────────────────────────────────────────────────────┤
+  │ FastBlockers     │ Retakes first → courses that unblock the most others     │
+  │                  │ (highest prereq frequency) → earlier in study guide      │
+  ├──────────────────┼──────────────────────────────────────────────────────────┤
+  │ StudyGuideStrict │ Retakes first → strictly follow recommended semester     │
+  │                  │ order from the university study guide                    │
+  └──────────────────┴──────────────────────────────────────────────────────────┘
+
+All 3 strategies share ONE non-negotiable rule:
+  → Failed courses are ALWAYS placed first in every strategy.
+    (Unresolved failures block other courses and delay graduation.)
+
+  Sort direction: ASCENDING — smallest value = highest priority.
+  That is why frequency is stored as negative (e.g. -5 sorts before 0)
+  and credits are stored as negative (e.g. -4 sorts before -3).
+
+
+HOW ONE SEMESTER IS BUILT (per strategy):
+  For each planned semester:
+    1. Label as Fall (odd semester number) or Spring (even semester number)
+    2. Filter available courses by:
+         • Offering constraint   → course parity must match semester parity
+                                   (Fall course can never appear in a Spring slot)
+         • Prerequisite constraint → all prereqs must be passed OR already
+                                     scheduled in a prior semester
+    3. Sort filtered courses by the strategy's sort key
+    4. Greedily pick courses up to the credit limit (16 or 18)
+
+  Safety cap: maximum 20 semesters to avoid infinite loops on bad data.
+
+
+OUTPUT PER PLAN:
+  • List of semesters, each containing:
+      - Course code, name, credits
+      - IsRetake flag
+      - Prerequisite list
+      - Eligibility status (eligible / blocked)
+  • Metrics:
+      - Number of semesters planned
+      - Courses and credits remaining
+      - Estimated graduation term
+
+  ★ Only the Balanced plan is persisted to the database.
+    The other two exist in-memory for comparison purposes only.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3. STRATEGY COMPARISON — PRACTICAL EXAMPLE
+────────────────────────────────────────────────────────────────────────────────
+
+Remaining courses for a student:
+
+  Course    Rec. Semester   Credits   Is Prereq For   Is Retake?
+  -------   -------------   -------   -------------   ----------
+  CS101          1             3           3            YES (failed)
+  CS201          2             4           1            No
+  MATH201        2             3           5            No
+  CS301          3             4           0            No
+  CS401          4             3           0            No
+
+  ┌──────────────────┬────────────────────────────────────────────────────┐
+  │ Balanced         │ CS101, CS201, MATH201, CS301, CS401                │
+  │                  │ (retake first, then earliest rec. semester,        │
+  │                  │  then higher credits)                              │
+  ├──────────────────┼────────────────────────────────────────────────────┤
+  │ FastBlockers     │ CS101, MATH201, CS201, CS301, CS401                │
+  │                  │ (retake first, then MATH201 because it unblocks    │
+  │                  │  5 courses, most of any course)                    │
+  ├──────────────────┼────────────────────────────────────────────────────┤
+  │ StudyGuideStrict │ CS101, CS201, MATH201, CS301, CS401                │
+  │                  │ (retake first, then strictly rec. semester order,  │
+  │                  │  no credit optimization)                           │
+  └──────────────────┴────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────
+4. AI RANKING LAYER
+────────────────────────────────────────────────────────────────────────────────
+
+After the 3 plans are generated, they are sent to OpenAI (gpt-4o-mini) for
+evaluation. The AI does NOT generate new plans — it only evaluates what the
+algorithm already produced.
+
+Input sent to AI (compact summary per plan):
+  • Strategy name
+  • Semesters planned
+  • Per-semester: credits, retake count, sample course codes
+  • Student context: program, current semester, academic status, credit limit
+
+Output from AI (structured JSON, strictly enforced schema):
+  • bestPlanIndex      → index of the recommended plan (0, 1, or 2)
+  • bestPlanSummary    → human-readable recommendation sentence
+  • Per plan:
+      - score (0–100)
+      - explanation (2–4 sentences)
+      - pros (2–4 points)
+      - cons (1–3 points)
+      - warnings (optional risk flags)
+
+AI evaluation criteria (from system prompt):
+  • Are prerequisites satisfied?
+  • Is the offering constraint respected?
+  • Are retakes handled early?
+  • Does it follow the study guide order?
+  • Is the credit load balanced across semesters?
+
+Failure handling:
+  If OpenAI is unavailable, the system returns a fallback response
+  (score = 50, generic explanation) — the page never crashes.
+
+
+────────────────────────────────────────────────────────────────────────────────
+5. FRONTEND — TWO-PHASE LOADING
+────────────────────────────────────────────────────────────────────────────────
+
+Phase 1 — Fast (GET /plans):
+  → Renders the page immediately with the 3 plans
+  → No AI dependency, always instant
+
+Phase 2 — Slow (GET /insights), runs in background after Phase 1:
+  → Overlays AI data without blocking the UI
+  → Shows spinner banner while loading
+  → Auto-selects the AI-recommended plan when ready
+  → Adds rank dot indicator on the best plan's tab
+
+UI Elements:
+  • KPI cards      → Semesters Planned, Courses Remaining,
+                     Credits Remaining, Est. Graduation
+  • Plan pills     → Plan 1 / Plan 2 / Plan 3 tabs with dot on best plan
+  • Semester cards → each course shows eligible (green) or blocked (red)
+  • AI insight card → score, rank, pros, cons, warnings per selected plan
+  • Export to PDF  → captures the full plan and downloads it
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — RISK ASSESSMENT FEATURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT IS IT?
+-----------
+The Risk Assessment feature calculates a risk score (0–100) for each student
+based on 5 academic factors. The score determines a risk level (HIGH / MEDIUM /
+LOW) and triggers automated interventions every 2 weeks.
+
+
+────────────────────────────────────────────────────────────────────────────────
+1. OVERALL RISK SCORE FORMULA
+────────────────────────────────────────────────────────────────────────────────
+
+  Overall Risk Score =
+      (55%  ×  Course Portfolio Risk)
+    + (15%  ×  GPA Risk)
+    + (10%  ×  Academic Status Risk)
+    + (10%  ×  Credit Delay Risk)
+    + (10%  ×  Missing Semester Courses Risk)
+
+All individual risk values are on a 0.0 → 1.0 scale.
+The final score is multiplied by 100 to get a 0–100 integer.
+
+  ┌────────────────────┬────────────┬────────────────────────────────────────┐
+  │ Risk Level         │ Score Range│ Meaning                                │
+  ├────────────────────┼────────────┼────────────────────────────────────────┤
+  │ HIGH               │  70 – 100  │ Immediate intervention required        │
+  │ MEDIUM             │  40 – 69   │ Monitor closely, action recommended    │
+  │ LOW                │   0 – 39   │ Student is stable                      │
+  └────────────────────┴────────────┴────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────
+2. FACTOR 1 — COURSE PORTFOLIO RISK (55%)
+────────────────────────────────────────────────────────────────────────────────
+
+The most important factor. Represents how the student is performing RIGHT NOW
+in all currently enrolled courses.
+
+STEP A — Per-component grade → risk value
+
+  ┌────────────────┬────────────┐
+  │ Grade          │ Risk Value │
+  ├────────────────┼────────────┤
+  │ < 60           │  1.0       │  (failing)
+  │ 60 – 69        │  0.6       │  (borderline)
+  │ 70 – 79        │  0.25      │  (weak pass)
+  │ ≥ 80           │  0.0       │  (good)
+  └────────────────┴────────────┘
+
+STEP B — Weighted component risk for one course
+
+  Example:
+    Component    Grade   Risk    Weight
+    ---------    -----   ----    ------
+    Midterm        55    1.0      30%       ← failing
+    Quiz           72    0.25     30%       ← weak pass
+    Final          65    0.6      40%       ← borderline
+
+    weightedSum = (1.0 × 30) + (0.25 × 30) + (0.6 × 40)
+                = 30 + 7.5 + 24
+                = 61.5
+
+    weightedComponentRisk = 61.5 / 100 = 0.615
+
+STEP C — Add absence risk into the course score
+
+  absenceRatio = absencesCount / maxAbsences
+
+  ┌────────────────────────┬────────────┐
+  │ Absence Ratio          │ Risk Value │
+  ├────────────────────────┼────────────┤
+  │ ≥ 80% of max allowed   │  1.0       │  (HIGH)
+  │ ≥ 50% of max allowed   │  0.6       │  (MEDIUM)
+  │ ≥ 30% of max allowed   │  0.25      │  (LOW)
+  │ < 30% of max allowed   │  0.0       │  (none)
+  └────────────────────────┴────────────┘
+
+  courseRisk = (35% × absenceRisk) + (65% × weightedComponentRisk)
+
+  Example (continuing from above, student has 6/10 absences → ratio 0.6 → risk 0.6):
+    courseRisk = (0.35 × 0.6) + (0.65 × 0.615)
+               = 0.21 + 0.40
+               = 0.61  →  courseRiskScore = 61  →  MEDIUM
+
+STEP D — Average across all enrolled courses
+
+  Course       Risk Score
+  --------     ----------
+  CS301            80
+  CS201            61      ← from example above
+  MATH201          20
+  CS401            10
+
+  portfolioRisk = (80 + 61 + 20 + 10) / 4 / 100
+                = 0.4275
+
+  Contribution to overall score = 0.55 × 0.4275 = 0.235  (~23 points out of 100)
+
+  NOTE: Using the average (not the worst) means one bad course does not
+  automatically make a student HIGH risk. Multiple failing courses are needed
+  to push the portfolio risk into HIGH territory.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3. FACTOR 2 — GPA RISK (15%)
+────────────────────────────────────────────────────────────────────────────────
+
+Represents the student's HISTORICAL academic performance.
+Taken directly from the cumulative GPA field in the student record.
+
+  ┌────────────┬────────────┐
+  │ GPA        │ Risk Value │
+  ├────────────┼────────────┤
+  │ < 60       │  1.0       │
+  │ 60 – 69    │  0.6       │
+  │ 70 – 79    │  0.25      │
+  │ ≥ 80       │  0.0       │
+  └────────────┴────────────┘
+
+  (Same thresholds as grade risk — consistent scale across the system.)
+
+
+────────────────────────────────────────────────────────────────────────────────
+4. FACTOR 3 — ACADEMIC STATUS RISK (10%)
+────────────────────────────────────────────────────────────────────────────────
+
+Represents whether the institution has ALREADY officially flagged the student.
+It is a flat mapping — no calculation involved.
+
+  ┌────────────┬────────────┐
+  │ Status     │ Risk Value │
+  ├────────────┼────────────┤
+  │ PROBATION  │  1.0       │
+  │ WARNING    │  0.6       │
+  │ NORMAL     │  0.0       │
+  └────────────┴────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────
+5. FACTOR 4 — CREDIT DELAY RISK (10%)
+────────────────────────────────────────────────────────────────────────────────
+
+Represents whether the student is BEHIND SCHEDULE for graduation.
+
+  expectedCreditsByNow = sum of credits for all study guide courses
+                         up to and including the current semester
+
+  earnedCredits        = sum of credits for all passed courses
+
+  delayedCredits       = expectedCreditsByNow − earnedCredits  (min 0)
+
+  creditDelayRisk      = delayedCredits / expectedCreditsByNow  (clamped 0–1)
+
+  Example:
+    Student is in semester 4.
+    Study guide expects 60 credits by semester 4.
+    Student has passed courses worth 42 credits.
+
+    delayedCredits  = 60 − 42 = 18
+    creditDelayRisk = 18 / 60 = 0.30
+
+  Also triggers a Global Alert:
+    ≥ 12 delayed credits → HIGH alert
+    ≥  6 delayed credits → MEDIUM alert
+
+
+────────────────────────────────────────────────────────────────────────────────
+6. FACTOR 5 — MISSING SEMESTER COURSES RISK (10%)
+────────────────────────────────────────────────────────────────────────────────
+
+Represents whether the student is SKIPPING expected courses THIS semester.
+
+  Expected courses = study guide courses recommended for the current semester
+  Missing courses  = expected courses that are NOT passed AND NOT currently enrolled
+
+  missingRisk = missingCount / totalExpectedThisSemester  (clamped 0–1)
+
+  Example:
+    Study guide says semester 3 has 5 courses.
+    Student passed 2, enrolled in 2, missing 1.
+
+    missingRisk = 1 / 5 = 0.20
+
+  Also triggers a Global Alert:
+    ≥ 2 missing courses → HIGH alert
+    = 1 missing course  → MEDIUM alert
+
+
+────────────────────────────────────────────────────────────────────────────────
+7. FULL SCORE CALCULATION EXAMPLE
+────────────────────────────────────────────────────────────────────────────────
+
+  Student profile:
+    GPA             = 65      → gpaRisk             = 0.6
+    Academic status = WARNING  → academicStatusRisk  = 0.6
+    Delayed credits = 18/60   → creditDelayRisk      = 0.30
+    Missing courses = 1/5     → missingRisk          = 0.20
+    Portfolio risk  = 0.4275  (from course example above)
+
+  Overall Risk Score:
+    = (0.55 × 0.4275)
+    + (0.15 × 0.60)
+    + (0.10 × 0.60)
+    + (0.10 × 0.30)
+    + (0.10 × 0.20)
+
+    = 0.235 + 0.090 + 0.060 + 0.030 + 0.020
+    = 0.435
+
+    riskScore = round(0.435 × 100) = 44  →  MEDIUM
+
+
+────────────────────────────────────────────────────────────────────────────────
+8. GLOBAL ALERTS (separate from the score)
+────────────────────────────────────────────────────────────────────────────────
+
+Global alerts are generated independently of the weighted formula.
+They are shown directly to students on their Alerts page.
+
+  Trigger                          Severity
+  ────────────────────────────────────────────────────
+  GPA < 60                         HIGH
+  GPA 60–69                        MEDIUM
+  Missing ≥ 2 semester courses      HIGH
+  Missing 1 semester course         MEDIUM
+  Delayed credits ≥ 12             HIGH
+  Delayed credits ≥ 6              MEDIUM
+
+
+────────────────────────────────────────────────────────────────────────────────
+9. AUTOMATED INTERVENTIONS
+────────────────────────────────────────────────────────────────────────────────
+
+Triggered automatically every 2 weeks via n8n (external workflow tool).
+Runs for ALL active students who have an assigned advisor.
+
+  ┌────────────┬──────────────────────────────────────────────────────────────┐
+  │ Risk Level │ Action                                                       │
+  ├────────────┼──────────────────────────────────────────────────────────────┤
+  │ LOW        │ Send encouragement message from advisor to student in chat   │
+  │ MEDIUM     │ Send notification in advisor-student conversation flagging   │
+  │            │ risk score and main concerns                                 │
+  │ HIGH       │ Send [HIGH RISK ALERT] message recommending immediate        │
+  │            │ advisor meeting with full risk details                       │
+  └────────────┴──────────────────────────────────────────────────────────────┘
+
+  14-day cooldown:
+    If the same action type was already triggered for a student within the
+    last 14 days, the system skips that student (SKIPPED_DUPLICATE).
+    A student moving from MEDIUM to HIGH triggers a new action because
+    the action type changes.
+
+  Conversation auto-creation:
+    If no conversation exists between the advisor and student, the system
+    creates one automatically before sending the message.
+
+  All actions are logged to the RiskInterventionLog table with:
+    student ID, advisor ID, risk level, risk score, action type, status,
+    main reasons, timestamp.
+
+
+────────────────────────────────────────────────────────────────────────────────
+10. WHAT STUDENTS SEE vs WHAT ADVISORS SEE
+────────────────────────────────────────────────────────────────────────────────
+
+  Students:
+    • Alerts page  → global alerts only (GPA, credits, missing courses)
+    • Risk page    → full risk score + per-course breakdown
+
+  Advisors:
+    • Per-student risk dashboard
+    • Overall score + risk level badge
+    • 5-factor breakdown with individual scores
+    • Per-course risk cards (sorted HIGH first), each showing:
+        - Absence ratio
+        - Component grades and weights
+        - Risk factors with severity tags
+        - Recommendation text
+    • Global alerts summary
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KEY DESIGN DECISIONS (for jury questions)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. WHY 55% FOR COURSE PORTFOLIO?
+   Current performance is the most actionable and immediate signal.
+   GPA and status are slower-moving indicators. If a student is failing
+   courses right now, that is the most urgent thing to act on.
+
+2. WHY AVERAGE AND NOT WORST COURSE FOR PORTFOLIO RISK?
+   Using the worst course would overpenalize students with one bad course
+   who are otherwise doing well. The average reflects the overall situation
+   more fairly.
+
+3. WHY 3 STRATEGIES FOR ACADEMIC PLANNING?
+   No single scheduling strategy fits all students. Balanced suits most.
+   FastBlockers suits students who want to unlock advanced courses early.
+   StudyGuideStrict suits conservative students or advisors who want to
+   mirror the official curriculum exactly.
+
+4. WHY IS AI USED ONLY FOR RANKING, NOT GENERATION?
+   Plan correctness (prerequisites, offering constraints, credit limits)
+   must be guaranteed. A deterministic algorithm guarantees this. The AI
+   adds value by explaining and ranking plans in natural language, but
+   correctness does not depend on AI availability.
+
+5. WHY 14-DAY COOLDOWN FOR AUTOMATION?
+   Prevents alert fatigue. If a student is already in intervention,
+   sending the same alert again within days adds no value and may cause
+   students or advisors to ignore future messages.
+
+6. WHY IS RISK RECALCULATED FRESH EVERY REQUEST?
+   Grade data and enrollment data changes frequently during a semester.
+   A cached score would quickly become stale. Real-time calculation
+   ensures the score always reflects the current state of the student.
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — REAL-TIME MESSAGING & BROADCAST FEATURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT IS IT?
+-----------
+The messaging system allows real-time private chat between an advisor and their
+assigned students, plus a broadcast system for advisors to send announcements
+to multiple students at once. Real-time delivery is powered by SignalR
+(WebSocket-based technology built into ASP.NET Core).
+
+
+────────────────────────────────────────────────────────────────────────────────
+1. THE TECHNOLOGY — SIGNALR
+────────────────────────────────────────────────────────────────────────────────
+
+SignalR is a library that keeps a persistent connection (WebSocket) between the
+browser and the server. Unlike normal HTTP where the client always asks first,
+SignalR allows the SERVER to push data to the client at any time.
+
+  Normal HTTP:
+    Client  ──── request ────►  Server
+    Client  ◄─── response ───  Server
+    (client must ask first every time)
+
+  SignalR (WebSocket):
+    Client  ◄══ persistent connection ══►  Server
+    (server can push to client at any time without being asked)
+
+Hub endpoint:    /hubs/chat
+Hub class:       ChatHub.cs  (requires authentication — [Authorize])
+
+User identification:
+  Each connected user is identified by their Keycloak "sub" claim (user ID).
+  This is handled by KeycloakUserIdProvider.cs which overrides SignalR's
+  default user ID resolution.
+  Result: the server can target a specific user by their Keycloak ID,
+  e.g. _hubContext.Clients.User(keycloakId).SendAsync(...)
+
+Frontend connection (chatConnection.js):
+  • Created once when the messages page loads
+  • JWT token is passed via accessTokenFactory (re-read on every request)
+  • withAutomaticReconnect() ensures the connection recovers if dropped
+  • stopChatConnection() is called when the user leaves the page
+
+
+────────────────────────────────────────────────────────────────────────────────
+2. PRIVATE CHAT — WORKFLOW
+────────────────────────────────────────────────────────────────────────────────
+
+CONVERSATION MODEL:
+  A Conversation is a persistent 1-to-1 channel between ONE advisor and ONE
+  student. It is created once and reused forever. If it already exists,
+  the system returns the existing one.
+
+  conversation = { advisorId, studentId, createdAt }
+
+  Rules:
+    • Only an advisor can start a conversation with a student
+      (via POST /api/chat/conversations/start)
+    • A student can only start a conversation with THEIR assigned advisor
+      (via POST /api/chat/conversations/my-advisor)
+    • An advisor can only message their own assigned students
+      (validated: student.AdvisorId must equal the advisor's ID)
+
+────────────────────────────────────────────────────────────────────────────────
+SENDING A MESSAGE — STEP BY STEP:
+────────────────────────────────────────────────────────────────────────────────
+
+  1. Client calls  POST /api/chat/messages  { conversationId, content }
+  2. Server validates:
+       • User is authenticated (Keycloak JWT)
+       • User belongs to this conversation (advisor or student check)
+       • Content is not empty
+  3. Message is saved to DB:
+       { conversationId, senderUserId, content, sentAt, isRead = false }
+  4. Server finds the OTHER participant (the receiver)
+  5. Server pushes via SignalR:
+       → To RECEIVER:  "ReceiveMessage"  with the message DTO
+       → To SENDER:    "MessageSent"     with the message DTO (confirmation)
+  6. Frontend updates the chat window in real time — no page refresh needed
+
+  Message DTO fields sent to client:
+    messageId, conversationId, senderUserId, senderRole,
+    content, isDeleted, deletedAt, editedAt, sentAt,
+    isRead, isMine, attachments[]
+
+  isMine flag:
+    The same message is serialized TWICE — once for the sender (isMine=true)
+    and once for the receiver (isMine=false). This lets the frontend know
+    which side of the chat bubble to display it on.
+
+────────────────────────────────────────────────────────────────────────────────
+SENDING A MESSAGE WITH FILES:
+────────────────────────────────────────────────────────────────────────────────
+
+  Endpoint:  POST /api/chat/messages/with-files  (multipart/form-data)
+
+  File constraints:
+    Max size:  10 MB per file
+    Allowed types:
+      Images  → jpeg, png, gif, webp
+      Docs    → PDF, Word (.doc/.docx), Excel (.xls/.xlsx), plain text
+
+  File storage:
+    Files are saved to: /wwwroot/uploads/messages/{guid}.extension
+    Original filename and stored filename are both tracked in DB
+    Public URL returned: /uploads/messages/{storedFileName}
+
+  A message with files can have text too, or be files only.
+  Text-only or files-only are both valid — but not neither.
+
+────────────────────────────────────────────────────────────────────────────────
+EDIT A MESSAGE:
+────────────────────────────────────────────────────────────────────────────────
+
+  Endpoint:  PUT /api/chat/messages/{messageId}  { content }
+
+  Rules:
+    • Only the SENDER of the message can edit it
+    • Deleted messages cannot be edited
+    • Messages WITH attachments cannot be edited
+    • New content cannot be empty
+
+  On success:
+    • message.content is updated
+    • message.editedAt is set to now
+    • SignalR pushes "MessageEdited" to BOTH sender and receiver
+
+────────────────────────────────────────────────────────────────────────────────
+DELETE A MESSAGE:
+────────────────────────────────────────────────────────────────────────────────
+
+  Endpoint:  DELETE /api/chat/messages/{messageId}
+
+  Rules:
+    • Only the SENDER of the message can delete it
+    • If already deleted, the operation is silently ignored (idempotent)
+
+  Soft delete:
+    • message.isDeleted = true
+    • message.deletedAt = now
+    • Content is NOT physically removed from DB
+    • When serialized to DTO: content becomes "" if isDeleted = true
+    • Frontend shows a placeholder: "This message was deleted"
+
+  On success:
+    • SignalR pushes "MessageDeleted" { messageId, conversationId }
+      to BOTH sender and receiver
+
+────────────────────────────────────────────────────────────────────────────────
+MARK AS READ:
+────────────────────────────────────────────────────────────────────────────────
+
+  Endpoint:  PUT /api/chat/conversations/{conversationId}/read
+
+  Marks all messages in the conversation sent by the OTHER party as read.
+  On success:
+    • SignalR pushes "MessagesRead" { conversationId, readerUserId }
+      to the OTHER party (the sender of those messages)
+    • Frontend updates the read receipt indicator (✓ → ✓✓)
+
+────────────────────────────────────────────────────────────────────────────────
+UNREAD COUNT:
+────────────────────────────────────────────────────────────────────────────────
+
+  Endpoint:  GET /api/chat/unread-count
+
+  Returns total unread messages across ALL conversations for the current user.
+  Displayed as a badge on the messages navigation icon.
+  MessagesProvider.js maintains this count globally and updates it:
+    • On initial load (fetch from API)
+    • On "ReceiveMessage" event (increment by 1)
+    • When user opens the messages page (reset / re-fetch)
+
+
+────────────────────────────────────────────────────────────────────────────────
+3. SIGNALR EVENTS SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+
+  ┌──────────────────┬──────────────┬───────────────────────────────────────┐
+  │ Event Name       │ Sent To      │ Triggered When                        │
+  ├──────────────────┼──────────────┼───────────────────────────────────────┤
+  │ ReceiveMessage   │ Receiver     │ New message sent                      │
+  │ MessageSent      │ Sender       │ New message confirmed saved           │
+  │ MessagesRead     │ Sender       │ Receiver marked conversation as read  │
+  │ MessageEdited    │ Both         │ A message was edited                  │
+  │ MessageDeleted   │ Both         │ A message was soft-deleted            │
+  │ ReceiveBroadcast │ Recipients   │ Advisor created a new broadcast       │
+  └──────────────────┴──────────────┴───────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────
+4. BROADCAST — WORKFLOW
+────────────────────────────────────────────────────────────────────────────────
+
+WHAT IS A BROADCAST?
+  A broadcast is a one-way announcement from an advisor to one or more of
+  their assigned students. Unlike private chat, students cannot reply to
+  a broadcast. It has a title, content, optional files, and per-student
+  read tracking.
+
+  Broadcast models:
+    BroadcastMessage   → { advisorId, title, content, createdAt }
+    BroadcastRecipient → { broadcastMessageId, studentId, isRead, readAt }
+    BroadcastAttachment→ { broadcastMessageId, fileName, fileUrl, ... }
+
+────────────────────────────────────────────────────────────────────────────────
+CREATING A BROADCAST — STEP BY STEP:
+────────────────────────────────────────────────────────────────────────────────
+
+  1. Advisor fills the BroadcastForm:
+       • Title (required)
+       • Content (required)
+       • Select students (from their assigned list — search/filter by name or program)
+       • Optional file attachments
+       • "Select all" / "Clear" quick actions available
+
+  2. Client calls  POST /api/broadcasts  (multipart/form-data)
+     with { title, content, studentIds[], files[] }
+
+  3. Server validates:
+       • User is an advisor
+       • Title and content are not empty
+       • Students selected must be assigned to THIS advisor
+         (if studentIds is empty → broadcast to ALL assigned students)
+
+  4. BroadcastMessage is saved to DB with one BroadcastRecipient row
+     per selected student (all with isRead = false initially)
+
+  5. Files (if any) are saved to /wwwroot/uploads/broadcasts/
+     Same validation as chat files (10MB, same allowed types)
+
+  6. Server finds the Keycloak user ID for each recipient student
+  7. For EACH recipient student connected via SignalR:
+       → Pushes "ReceiveBroadcast" event with the full BroadcastDto
+
+  Result: students receive the broadcast in real time if they are online.
+  If offline, they see it the next time they open their broadcast inbox.
+
+────────────────────────────────────────────────────────────────────────────────
+READING A BROADCAST (STUDENT SIDE):
+────────────────────────────────────────────────────────────────────────────────
+
+  Endpoint:  GET /api/broadcasts
+    → Advisor: sees all broadcasts they created (with recipient counts)
+    → Student: sees only broadcasts they are a recipient of, with isRead flag
+
+  Endpoint:  PUT /api/broadcasts/{broadcastMessageId}/read
+    → Only students can call this
+    → Sets BroadcastRecipient.isRead = true, readAt = now
+    → Per-student read tracking — each student marks it independently
+
+  Frontend (BroadcastInbox.jsx):
+    • Drawer panel (slide-in panel) in the student messages page
+    • Shows unread count badge
+    • Each broadcast card shows title, content, advisor name, date
+    • Attachments (images inline, files as download links)
+    • "Mark as read" button per broadcast
+    • Real-time arrival via "ReceiveBroadcast" SignalR event
+
+
+────────────────────────────────────────────────────────────────────────────────
+5. CHAT vs BROADCAST — KEY DIFFERENCES
+────────────────────────────────────────────────────────────────────────────────
+
+  ┌──────────────────────────┬───────────────────────┬────────────────────────┐
+  │ Aspect                   │ Private Chat          │ Broadcast              │
+  ├──────────────────────────┼───────────────────────┼────────────────────────┤
+  │ Direction                │ Two-way               │ One-way (advisor only) │
+  │ Participants             │ 1 advisor ↔ 1 student │ 1 advisor → N students │
+  │ Student can reply        │ Yes                   │ No                     │
+  │ Per-message read receipt │ Yes (✓✓)              │ No                     │
+  │ Per-student read track   │ Yes                   │ Yes                    │
+  │ Edit / Delete            │ Yes (sender only)     │ No                     │
+  │ File attachments         │ Yes                   │ Yes                    │
+  │ Real-time delivery       │ Yes (SignalR)         │ Yes (SignalR)          │
+  │ Offline delivery         │ Yes (from DB on load) │ Yes (from DB on load)  │
+  │ Stored in DB             │ ChatMessage table     │ BroadcastMessage table │
+  └──────────────────────────┴───────────────────────┴────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────
+6. SECURITY & ACCESS CONTROL
+────────────────────────────────────────────────────────────────────────────────
+
+  • All endpoints require a valid Keycloak JWT token ([Authorize])
+  • The ChatHub itself requires authentication — unauthenticated connections
+    are rejected before they reach the hub
+  • Conversation access is validated on every operation:
+      Advisor → can only access conversations where AdvisorId matches theirs
+      Student → can only access conversations where StudentId matches theirs
+  • An advisor cannot message a student not assigned to them
+  • A student cannot message an advisor they are not assigned to
+  • Broadcast creation is restricted to advisors only
+  • Broadcast reading is restricted to students who are recipients
+  • Edit/Delete restricted to the original sender only
+
+
+────────────────────────────────────────────────────────────────────────────────
+7. KEY DESIGN DECISIONS (for jury questions)
+────────────────────────────────────────────────────────────────────────────────
+
+1. WHY SIGNALR AND NOT POLLING?
+   Polling (checking the server every few seconds) wastes bandwidth and
+   introduces latency. SignalR keeps a persistent WebSocket connection so
+   messages arrive instantly with zero unnecessary requests.
+
+2. WHY IS THE HUB EMPTY (ChatHub.cs has no methods)?
+   All business logic lives in ChatService. The hub is used only as a
+   channel identifier. The server pushes messages using IHubContext<ChatHub>
+   from the service layer — clients never call hub methods directly.
+   This keeps the hub thin and the logic testable.
+
+3. WHY SOFT DELETE FOR MESSAGES?
+   Hard deletion would create gaps in conversation history and could cause
+   confusion. Soft delete preserves the record in the DB while showing
+   "This message was deleted" in the UI — the conversation flow stays intact.
+
+4. WHY IS isMine COMPUTED SERVER-SIDE?
+   The frontend should not determine message ownership by comparing user IDs
+   from the token with message data — that would expose internal user IDs
+   unnecessarily. The server serializes the same message twice with the
+   correct isMine value for each recipient.
+
+5. WHY CAN'T MESSAGES WITH ATTACHMENTS BE EDITED?
+   Editing a message with files would create an inconsistency between the
+   text and the files (which files belong to which version of the text).
+   Keeping them immutable avoids this ambiguity.
+
+6. WHY DOES BROADCAST USE PER-STUDENT READ TRACKING?
+   Unlike email where read status is binary, an advisor needs to know
+   which specific students have read their announcement. This is important
+   for academic follow-up (e.g., "did all students read the exam reminder?").
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 4 — AI ASSISTANT FEATURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT IS IT?
+-----------
+The AI Assistant is a RAG-based chatbot (Retrieval Augmented Generation) that
+answers student questions using two sources:
+  1. Uploaded documents  — study guides, course syllabuses (searched via vector
+                           similarity in the database)
+  2. Live student data   — grades, courses, meetings (fetched via plugin functions
+                           at query time)
+
+Technology stack:
+  • LLM:          OpenAI gpt-4o-mini (chat completion)
+  • Embeddings:   OpenAI text-embedding-3-small (1536 dimensions)
+  • Framework:    Microsoft Semantic Kernel (function calling, plugins)
+  • Vector store: PostgreSQL with pgvector extension (cosine distance search)
+  • PDF parsing:  UglyToad.PdfPig
+  • Streaming:    Server-Sent Events (SSE) — token-by-token response
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE A — DOCUMENT PREPARATION (Admin, done before any chat)
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+Step 1 — Admin uploads a PDF
+────────────────────────────────────────────────────────────────────────────────
+
+  Endpoint:  POST /api/admin/ai-documents
+  Fields:    title, documentType, scope, courseCode, programCode, file
+
+  Document scopes:
+  ┌──────────┬────────────────────────────────────────────────────────────────┐
+  │ Scope    │ Accessible to                                                  │
+  ├──────────┼────────────────────────────────────────────────────────────────┤
+  │ course   │ Students who have that course in their academic history        │
+  │ program  │ Students enrolled in that program                              │
+  │ general  │ All students                                                   │
+  └──────────┴────────────────────────────────────────────────────────────────┘
+
+  Document types: study_guide, course_syllabus
+  Max file size: 20 MB, PDF only
+
+────────────────────────────────────────────────────────────────────────────────
+Step 2 — PDF text extraction
+────────────────────────────────────────────────────────────────────────────────
+
+  PdfTextExtractionService reads the PDF page by page using UglyToad.PdfPig
+  and returns a list of: { pageNumber, text }
+
+────────────────────────────────────────────────────────────────────────────────
+Step 3 — Cleaning (SemanticChunkingService → CleanPages)
+────────────────────────────────────────────────────────────────────────────────
+
+  Each page passes through 4 filters before being used:
+
+  FILTER 1 — Skip Table of Contents pages entirely
+    A page is skipped if:
+      • Contains "table of content" or "table of contents"  → skip immediately
+      • OR contains ≥ 5 of these keywords AND > 20 dots in the text:
+          "introduction", "graduation requirements", "academic status",
+          "teaching methods", "assessment methods", "general provisions",
+          "official withdrawal"
+    The dots check catches pages like:
+      Introduction .................. 3
+      Academic Status ............... 7
+
+  FILTER 2 — Normalize each line
+    • Unify line endings (\r\n, \r → \n)
+    • Collapse multiple spaces into one
+    • Drop empty lines after normalization
+
+  FILTER 3 — Remove noise lines
+    • Page number stamps  → regex ^\d+\s*/\s*\d+$   e.g. "3 / 24"
+    • Known headers/footers (exact match):
+        "STUDY GUIDE Faculty of Engineering", "STUDY GUIDE",
+        "Faculty of Engineering", "Department of",
+        "Computer and Communications Engineering", "2023-2024"
+    • Lines ≤ 2 characters
+
+  FILTER 4 — Drop the page if nothing remains after filtering
+
+  Example:
+    Raw input:
+      STUDY GUIDE Faculty of Engineering
+      3 / 24
+      The passing grade for all courses is 60 out of 100.
+      Students who score below 60 will be required to retake the course.
+      A
+      Computer and Communications Engineering
+
+    After cleaning:
+      The passing grade for all courses is 60 out of 100.
+      Students who score below 60 will be required to retake the course.
+
+────────────────────────────────────────────────────────────────────────────────
+Step 4 — Semantic chunking
+────────────────────────────────────────────────────────────────────────────────
+
+  The full document text cannot be sent to OpenAI at once — it is too large.
+  It must be split into chunks. But splitting randomly would cut sentences
+  mid-thought. Semantic chunking respects content boundaries.
+
+  Section title detection:
+    Each page is analyzed for keywords and assigned a meaningful title:
+      page contains "graduation requirements" → "Graduation requirements"
+      page contains "assessment measures"     → "Course Overview and Assessment"
+      page contains "Chapter 3: ..."          → "Chapter 3: ..."
+      page contains "semester 4"             → "Semester 4"
+    Fallback: "Page {pageNumber}"
+
+  Chunking rules:
+    Max chunk size:  450 words
+    Min chunk size:   60 words (smaller chunks are discarded)
+    Overlap:          50 words between consecutive chunks
+
+  Why overlap?
+    If a concept spans the boundary between two chunks, the last 50 words of
+    chunk N are repeated at the start of chunk N+1. This ensures no information
+    is lost at the boundary.
+
+    Chunk 1: words   1 – 450
+    Chunk 2: words 401 – 850   ← first 50 words repeat from chunk 1
+    Chunk 3: words 801 – 1250
+
+  Each chunk stores: { chunkText, sectionTitle, pageNumber, tokenCount }
+
+────────────────────────────────────────────────────────────────────────────────
+Step 5 — Embedding generation
+────────────────────────────────────────────────────────────────────────────────
+
+  Each chunk text is sent to OpenAI text-embedding-3-small which returns
+  a vector of 1536 floating-point numbers representing the semantic meaning:
+
+    "The passing grade for this course is 60/100"
+    → [0.023, -0.187, 0.441, ... ]  (1536 numbers)
+
+  Two chunks with similar meaning will have vectors that are mathematically
+  close to each other — this is what makes similarity search possible.
+
+────────────────────────────────────────────────────────────────────────────────
+Step 6 — Stored in PostgreSQL with pgvector
+────────────────────────────────────────────────────────────────────────────────
+
+  Each chunk saved as one row in ai_document_chunks:
+    { chunkId, documentId, chunkText, embedding (vector 1536),
+      sectionTitle, pageNumber, scope, courseCode, programCode }
+
+  pgvector is a PostgreSQL extension that stores vectors and computes
+  cosine distance between them efficiently at query time.
+
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE B — STUDENT ASKS A QUESTION
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+Step 1 — Student sends a message
+────────────────────────────────────────────────────────────────────────────────
+
+  Endpoint:  POST /api/student-ai/chat/stream
+  Fields:    { message, sessionId (optional), courseCode (optional) }
+  Role:      STUDENT only
+
+  Session management:
+    If sessionId provided and belongs to this student → reuse existing session
+    Otherwise → create a new AiChatSession
+    All messages saved to ai_chat_messages { role: "user"/"assistant", message, createdAt }
+
+────────────────────────────────────────────────────────────────────────────────
+Step 2 — Access control check (VectorSearchService)
+────────────────────────────────────────────────────────────────────────────────
+
+  Before searching, the system builds the student's accessible course codes
+  from 4 sources:
+    • Current enrollments      (sis_current_enrollment)
+    • Course history           (sis_student_course_history — passed/failed/withdrawn)
+    • Graded courses           (sis_student_grades)
+    • Assessed courses         (sis_course_assessment)
+
+  Result: a HashSet of course codes this student has ever been involved with.
+
+  If a courseCode filter is provided in the request:
+    → Verify it exists in the accessible set — if not, return empty (access denied)
+
+  This ensures a student can NEVER retrieve documents for courses outside
+  their own academic history.
+
+────────────────────────────────────────────────────────────────────────────────
+Step 3 — Vector similarity search
+────────────────────────────────────────────────────────────────────────────────
+
+  The student's question is embedded using the same model:
+    "What is the passing grade for CS301?"
+    → [0.019, -0.201, 0.438, ... ]  (1536 numbers)
+
+  pgvector runs cosine distance against all accessible chunks:
+    WHERE scope = 'course' AND courseCode IN (student's accessible codes)
+       OR scope = 'program' AND programCode = student's program
+       OR scope = 'general'
+    ORDER BY embedding <=> queryVector   ← cosine distance (smaller = closer)
+    TAKE 5 chunks
+
+  SimilarityScore = 1 - cosineDistance
+    Score 1.0 = perfect match
+    Score 0.0 = completely unrelated
+
+────────────────────────────────────────────────────────────────────────────────
+Step 4 — Decision: RAG or Plugin?
+────────────────────────────────────────────────────────────────────────────────
+
+  Threshold = 0.75
+
+  ┌─────────────────────────────────────┬──────────────────────────────────────┐
+  │ Condition                           │ Path                                 │
+  ├─────────────────────────────────────┼──────────────────────────────────────┤
+  │ Top chunk score ≥ 0.75              │ RAG — answer from documents          │
+  │ Top chunk score < 0.75 OR no chunks │ Plugin — answer from live student data│
+  └─────────────────────────────────────┴──────────────────────────────────────┘
+
+────────────────────────────────────────────────────────────────────────────────
+Step 5a — RAG path (document-based answer)
+────────────────────────────────────────────────────────────────────────────────
+
+  The 5 retrieved chunks are assembled into a context block:
+
+    [Source 1]
+    Document: CS301 Syllabus
+    Section: Course Overview and Assessment
+    Page: 3
+    Content: The passing grade for CS301 is 60/100. Students must...
+
+    [Source 2]
+    ...
+
+  This context + the question is sent to gpt-4o-mini with strict instructions:
+    • Answer ONLY using the provided context
+    • Do not invent course rules, deadlines, grades, or policies
+    • Be clear, supportive, and student-friendly
+    • Mention the source section or page when relevant
+    • No LaTeX — write formulas in plain text
+
+  responseSource = "rag"
+
+────────────────────────────────────────────────────────────────────────────────
+Step 5b — Plugin path (live data answer)
+────────────────────────────────────────────────────────────────────────────────
+
+  If no relevant document chunks were found, the kernel tries to answer
+  using 4 plugin functions. The AI decides automatically (FunctionChoiceBehavior.Auto)
+  which plugin to call based on the question:
+
+  ┌──────────────────────┬──────────────────────────────┬──────────────────────┐
+  │ Plugin               │ Functions                    │ Example question     │
+  ├──────────────────────┼──────────────────────────────┼──────────────────────┤
+  │ StudentInfoPlugin    │ GetMyAcademicProfile()        │ "What semester am I  │
+  │                      │ GetMyCurrentCourses()         │  in?"                │
+  ├──────────────────────┼──────────────────────────────┼──────────────────────┤
+  │ StudentProgressPlugin│ GetMyCourseProgress()         │ "What is my grade in │
+  │                      │                              │  CS301?"             │
+  ├──────────────────────┼──────────────────────────────┼──────────────────────┤
+  │ StudentMeetingPlugin │ GetMyUpcomingMeetings()       │ "Do I have a meeting │
+  │                      │                              │  this week?"         │
+  ├──────────────────────┼──────────────────────────────┼──────────────────────┤
+  │ AcademicSupportPlugin│ GetGeneralAcademicSupportAdvice() │ General support  │
+  │                      │                              │  questions           │
+  └──────────────────────┴──────────────────────────────┴──────────────────────┘
+
+  A FunctionCallTracker monitors whether any plugin was actually invoked.
+  If NO plugin was called → question is unsupported → fallback message:
+    "Thank you for your question! Unfortunately, this topic is not supported
+     yet by our assistant..."
+
+  responseSource = "plugin" or "not_supported"
+
+────────────────────────────────────────────────────────────────────────────────
+Step 6 — Streaming response via SSE
+────────────────────────────────────────────────────────────────────────────────
+
+  The answer is not returned all at once. It streams token by token to the
+  frontend using Server-Sent Events (SSE):
+
+    event: token
+    data: {"content": "The"}
+
+    event: token
+    data: {"content": " passing"}
+
+    event: token
+    data: {"content": " grade"}
+
+    ...
+
+    event: metadata
+    data: {
+      "sessionId": 5,
+      "responseSource": "rag",
+      "topSimilarityScore": 0.89,
+      "sources": [{ "title": "CS301 Syllabus", "page": 3, "section": "..." }]
+    }
+
+    event: done
+    data: {}
+
+  The frontend reads each "token" event and appends it to the displayed message
+  in real time — this is the typing effect the user sees.
+
+  At the end, the "metadata" event sends:
+    • Which documents were used as sources
+    • The top similarity score
+    • The response source (rag / plugin / not_supported)
+
+────────────────────────────────────────────────────────────────────────────────
+Step 7 — Logging
+────────────────────────────────────────────────────────────────────────────────
+
+  Every query is logged to ai_retrieval_logs:
+    { studentId, sessionId, question, retrievedChunkIds, topSimilarityScore,
+      responseSource, createdAt }
+
+  Used for analytics: which questions are answered, which fall back to plugins,
+  which are not supported — helps admin know which documents to upload next.
+
+
+────────────────────────────────────────────────────────────────────────────────
+FULL FLOW SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+
+  ADMIN (once):
+    Upload PDF
+      → extract text page by page
+      → clean: remove TOC pages, headers, footers, page numbers, noise lines
+      → detect sections, assign titles
+      → split into 450-word chunks with 50-word overlap
+      → embed each chunk (1536 numbers) via OpenAI text-embedding-3-small
+      → store in PostgreSQL with pgvector
+
+  STUDENT (every question):
+    Ask a question
+      → embed the question (same model)
+      → build accessible course codes from academic history
+      → cosine distance search in pgvector → top 5 chunks
+      → top score ≥ 0.75?
+          YES → RAG: send chunks + question to gpt-4o-mini → answer from documents
+          NO  → Plugin: GPT calls StudentInfo / Progress / Meeting plugins
+                        → answer from live student data
+                No plugin called? → "This topic is not supported yet"
+      → stream tokens to frontend via SSE (typing effect)
+      → send metadata event (sources, score, responseSource)
+      → save session messages + log retrieval to DB
+
+
+────────────────────────────────────────────────────────────────────────────────
+KEY DESIGN DECISIONS (for jury questions)
+────────────────────────────────────────────────────────────────────────────────
+
+1. WHY RAG AND NOT JUST ASKING GPT DIRECTLY?
+   GPT has no knowledge of the university's specific study guides, syllabuses,
+   or policies. Without RAG, it would hallucinate rules and grades. RAG grounds
+   the answer in actual uploaded documents — the AI can only say what is
+   really in the document.
+
+2. WHY THE 0.75 SIMILARITY THRESHOLD?
+   Below 0.75 the retrieved chunks are not relevant enough to base an answer on.
+   Using low-similarity chunks would cause the AI to produce answers that mix
+   unrelated content. The threshold forces a fallback to plugins when documents
+   don't have the answer.
+
+3. WHY PLUGINS INSTEAD OF JUST RETURNING "I DON'T KNOW"?
+   Many student questions are about their own live data (grades, meetings,
+   courses) which will never appear in a PDF. Plugins bridge this gap by
+   fetching real data from the database at query time.
+
+4. WHY SEMANTIC CHUNKING AND NOT FIXED-SIZE SPLITTING?
+   Fixed splitting (every N characters) cuts sentences and paragraphs at
+   arbitrary points. Semantic chunking respects page and section boundaries,
+   assigns meaningful titles, and uses overlap to avoid losing context at
+   boundaries — resulting in much higher retrieval quality.
+
+5. WHY OVERLAP BETWEEN CHUNKS?
+   A sentence that spans the end of one chunk and the beginning of the next
+   would be incomplete in both. The 50-word overlap repeats the tail of the
+   previous chunk so no information is lost at boundaries.
+
+6. WHY ACCESS CONTROL ON VECTOR SEARCH?
+   Without access control, a student could ask about another course's passing
+   grade and retrieve that course's syllabus even if they are not enrolled.
+   Restricting retrieval to the student's own academic history keeps each
+   student's context private and relevant.
+
+7. WHY STREAMING (SSE) INSTEAD OF WAITING FOR THE FULL ANSWER?
+   GPT can take several seconds to generate a full answer. Showing tokens as
+   they arrive (typing effect) gives immediate visual feedback and makes the
+   experience feel responsive rather than frozen.
+
+================================================================================
+                             END OF DOCUMENT
+================================================================================

@@ -28,8 +28,9 @@
   gap: 14px;
   padding: 20px;
   background: var(--gray-100);
-  min-height: 100vh;
+  height: 100vh;
   font-family: var(--font);
+  overflow: hidden;
 }
 
 /* ─── Broadcast Form ──────────────────────────────────────────────────────── */
@@ -44,6 +45,50 @@
 
 .broadcast-form-card__body {
   padding: 18px 20px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+/* Toggle bar (always visible) */
+.broadcast-toggle-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-900);
+  gap: 10px;
+}
+
+.broadcast-toggle-bar:hover {
+  background: #f8f9fa;
+}
+
+.broadcast-toggle-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.broadcast-toggle-bar__label {
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.broadcast-toggle-bar__badge {
+  background: #e8f4fd;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .broadcast-form-card__title {

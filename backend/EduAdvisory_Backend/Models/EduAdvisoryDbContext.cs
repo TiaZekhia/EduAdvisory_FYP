@@ -79,8 +79,14 @@ public partial class EduAdvisoryDbContext : DbContext
     public DbSet<AiRetrievalLog> AiRetrievalLogs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=localhost;Database=eduadvisory_db;Username=postgres;Password=@#$TIze06@#$");
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+#pragma warning disable CS0618
+            optionsBuilder.UseNpgsql("Host=localhost;Database=eduadvisory_db;Username=postgres;Password=@#$TIze06@#$");
+#pragma warning restore CS0618
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -380,8 +386,15 @@ public partial class EduAdvisoryDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            entity.Property(e => e.Embedding)
-                .HasColumnType("vector(1536)");
+            if (Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                entity.Property(e => e.Embedding)
+                    .HasColumnType("vector(1536)");
+            }
+            else
+            {
+                entity.Ignore(e => e.Embedding);
+            }
 
             entity.HasIndex(e => e.CourseCode)
                 .HasDatabaseName("idx_ai_chunks_course_code");

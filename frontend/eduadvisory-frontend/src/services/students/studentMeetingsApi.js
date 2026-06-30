@@ -10,5 +10,6 @@ export const studentMeetingsApi = {
   cancelRequest: (id) => apiClient.delete(`/student-meetings/my/requests/${id}`),
 
   getUpcoming: () => apiClient.get("/student-meetings/my/upcoming"),
+  cancelMeeting: (id, reason) => apiClient.delete(`/student-meetings/my/upcoming/${id}`, { data: { reason } }),
   getHistory: () => apiClient.get("/student-meetings/my/history"),
 };

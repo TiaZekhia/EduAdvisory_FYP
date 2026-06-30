@@ -44,6 +44,12 @@ export default function MeetingsPage() {
   const [savingRequest, setSavingRequest] = useState(false);
   const [actionError, setActionError] = useState("");
 
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelErr, setCancelErr] = useState("");
+
   const pendingRequestsCount = useMemo(
     () => requests.filter((r) => r.status === "PENDING").length,
     [requests]
@@ -131,6 +137,30 @@ export default function MeetingsPage() {
       setActionError(e?.response?.data ?? e?.message ?? "Failed to submit request.");
     } finally {
       setSavingRequest(false);
+    }
+  };
+
+  const openCancelDialog = (meeting) => {
+    setCancelTarget(meeting);
+    setCancelReason("");
+    setCancelErr("");
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelMeeting = async () => {
+    if (!cancelTarget) return;
+    try {
+      setCancelling(true);
+      setCancelErr("");
+      await studentMeetingsApi.cancelMeeting(cancelTarget.meetingId, cancelReason.trim() || null);
+      setActionMsg("Meeting cancelled.");
+      setCancelDialogOpen(false);
+      await Promise.all([loadBaseData(), loadCalendar(calendarDate)]);
+    } catch (e) {
+      console.error(e);
+      setCancelErr(e?.response?.data?.message ?? e?.response?.data ?? e?.message ?? "Failed to cancel meeting.");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -319,7 +349,7 @@ export default function MeetingsPage() {
         {upcoming?.length ? (
           <div className="d-flex flex-column gap-3">
             {upcoming.map((meeting) => (
-              <UpcomingMeetingRow key={meeting.meetingId} meeting={meeting} />
+              <UpcomingMeetingRow key={meeting.meetingId} meeting={meeting} onCancel={() => openCancelDialog(meeting)} />
             ))}
           </div>
         ) : (
@@ -353,6 +383,53 @@ export default function MeetingsPage() {
           />
         )}
       </Card>
+
+      <Dialog
+        header="Cancel Meeting"
+        visible={cancelDialogOpen}
+        style={{ width: "36rem", maxWidth: "95vw" }}
+        onHide={() => setCancelDialogOpen(false)}
+      >
+        {cancelTarget && (
+          <div>
+            <div className="meeting-dialog-banner mb-3">
+              <div className="meeting-dialog-banner-icon">
+                <i className="pi pi-times-circle" />
+              </div>
+              <div>
+                <div className="meeting-dialog-banner-title">{cancelTarget.advisorName}</div>
+                <div className="meeting-dialog-banner-text">
+                  {formatDateLong(cancelTarget.startAt)} • {formatTime(cancelTarget.startAt)} – {formatTime(cancelTarget.endAt)}
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="meeting-advisor-label d-block mb-2">Reason for cancellation (optional)</label>
+              <InputTextarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                className="w-100"
+                placeholder="Let your advisor know why you're cancelling."
+              />
+            </div>
+
+            {cancelErr && <Message severity="error" text={cancelErr} className="w-100 mb-3" />}
+
+            <div className="d-flex justify-content-end gap-2 mt-3">
+              <Button label="Keep Meeting" className="p-button-text" onClick={() => setCancelDialogOpen(false)} />
+              <Button
+                label={cancelling ? "Cancelling…" : "Cancel Meeting"}
+                icon="pi pi-times"
+                severity="danger"
+                onClick={handleCancelMeeting}
+                disabled={cancelling}
+              />
+            </div>
+          </div>
+        )}
+      </Dialog>
 
       <Dialog
         header="Request Meeting"
@@ -454,7 +531,7 @@ function EmptyState({ icon, title, text }) {
   );
 }
 
-function UpcomingMeetingRow({ meeting }) {
+function UpcomingMeetingRow({ meeting, onCancel }) {
   const hasLink = meeting.meetingLink?.trim();
   const accent = meetingAccentColor(meeting.title);
   const ini = nameInitials(meeting.advisorName);
@@ -483,15 +560,25 @@ function UpcomingMeetingRow({ meeting }) {
               {formatDateShort(meeting.startAt)}
             </span>
           </div>
-          {hasLink ? (
-            <a href={meeting.meetingLink} target="_blank" rel="noreferrer" className="mcard-join-btn">
-              <i className="pi pi-video" /> Join Meeting
-            </a>
-          ) : (
-            <span className="mcard-link-pending">
-              <i className="pi pi-clock" /> Meeting link pending approval
-            </span>
-          )}
+          <div className="d-flex align-items-center gap-2 flex-wrap mt-2">
+            {hasLink ? (
+              <a href={meeting.meetingLink} target="_blank" rel="noreferrer" className="mcard-join-btn">
+                <i className="pi pi-video" /> Join Meeting
+              </a>
+            ) : (
+              <span className="mcard-link-pending">
+                <i className="pi pi-clock" /> Meeting link pending approval
+              </span>
+            )}
+            {onCancel && (
+              <Button
+                label="Cancel"
+                icon="pi pi-times"
+                className="p-button-sm p-button-outlined p-button-danger"
+                onClick={onCancel}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

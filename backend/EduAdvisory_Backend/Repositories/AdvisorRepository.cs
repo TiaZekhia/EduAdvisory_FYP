@@ -20,7 +20,8 @@ namespace EduAdvisory_Backend.Repositories
 
         public Advisor GetByUsername(string username)
         {
-            var user = _context.Users.FirstOrDefault(u => u.Username == username);
+            var lower = username.ToLowerInvariant();
+            var user = _context.Users.FirstOrDefault(u => u.Username != null && u.Username.ToLower() == lower);
 
             if (user == null || user.LinkedAdvisorId == null)
                 return null;

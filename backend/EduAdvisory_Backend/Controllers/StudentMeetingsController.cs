@@ -143,7 +143,7 @@ namespace EduAdvisory_Backend.Controllers
             {
                 merged = merged.Where(slot =>
                 {
-                    var slotLocalTime = slot.StartAt.ToLocalTime().TimeOfDay;
+                    var slotLocalTime = slot.StartAt.TimeOfDay;
                     return !partialExceptions.Any(ex =>
                         slotLocalTime >= ex.StartTime && slotLocalTime < ex.EndTime);
                 }).ToList();
@@ -296,6 +296,31 @@ namespace EduAdvisory_Backend.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Meeting request cancelled." });
+        }
+
+        [HttpDelete("my/upcoming/{id:int}")]
+        public async Task<IActionResult> CancelMeeting(int id, [FromBody] CancelMeetingDto dto)
+        {
+            var student = await GetCurrentStudentAsync();
+            if (student == null) return Unauthorized();
+
+            var meeting = await _context.Meetings
+                .FirstOrDefaultAsync(m =>
+                    m.MeetingId == id &&
+                    m.StudentId == student.StudentId &&
+                    m.Status == "UPCOMING");
+
+            if (meeting == null)
+                return NotFound("Upcoming meeting not found.");
+
+            meeting.Status = "CANCELLED";
+            meeting.CancellationReason = dto.Reason?.Trim();
+            meeting.CancelledBy = "STUDENT";
+            meeting.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Meeting cancelled." });
         }
 
         [HttpGet("my/upcoming")]

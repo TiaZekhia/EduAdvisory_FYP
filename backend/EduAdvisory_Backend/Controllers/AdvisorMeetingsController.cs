@@ -312,6 +312,51 @@ namespace EduAdvisory_Backend.Controllers
                     return BadRequest(new { message = "This date already has a blocked period. Remove it first or add a time range." });
             }
 
+            // Build UTC range for the blocked period to check against existing meetings
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(
+                OperatingSystem.IsWindows() ? "Middle East Standard Time" : "Asia/Beirut");
+
+            DateTimeOffset blockStart, blockEnd;
+            if (isPartial)
+            {
+                var localStart = new DateTime(dto.Date.Year, dto.Date.Month, dto.Date.Day,
+                    dto.StartTime!.Value.Hours, dto.StartTime.Value.Minutes, 0, DateTimeKind.Unspecified);
+                var localEnd = new DateTime(dto.Date.Year, dto.Date.Month, dto.Date.Day,
+                    dto.EndTime!.Value.Hours, dto.EndTime.Value.Minutes, 0, DateTimeKind.Unspecified);
+
+                blockStart = new DateTimeOffset(localStart, tz.GetUtcOffset(localStart)).ToUniversalTime();
+                blockEnd = new DateTimeOffset(localEnd, tz.GetUtcOffset(localEnd)).ToUniversalTime();
+            }
+            else
+            {
+                var localDayStart = new DateTime(dto.Date.Year, dto.Date.Month, dto.Date.Day, 0, 0, 0, DateTimeKind.Unspecified);
+                blockStart = new DateTimeOffset(localDayStart, tz.GetUtcOffset(localDayStart)).ToUniversalTime();
+                blockEnd = blockStart.AddDays(1);
+            }
+
+            var conflictingMeeting = await _context.Meetings
+                .Include(m => m.Student)
+                .Where(m =>
+                    m.AdvisorId == advisor.AdvisorId &&
+                    m.Status == "UPCOMING" &&
+                    m.StartAt < blockEnd &&
+                    m.EndAt > blockStart)
+                .Select(m => new
+                {
+                    m.MeetingId,
+                    m.StartAt,
+                    StudentName = $"{m.Student!.FirstName} {m.Student.LastName}"
+                })
+                .FirstOrDefaultAsync();
+
+            if (conflictingMeeting != null)
+                return BadRequest(new
+                {
+                    message = $"You have an upcoming meeting with {conflictingMeeting.StudentName} during this time. Cancel it first.",
+                    meetingId = conflictingMeeting.MeetingId,
+                    meetingStartAt = conflictingMeeting.StartAt
+                });
+
             var exception = new AdvisorAvailabilityException
             {
                 AdvisorId = advisor.AdvisorId,
@@ -343,6 +388,31 @@ namespace EduAdvisory_Backend.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Period unblocked successfully." });
+        }
+
+        [HttpDelete("upcoming/{id:int}")]
+        public async Task<IActionResult> CancelMeeting(int id, [FromBody] CancelMeetingDto dto)
+        {
+            var advisor = await GetCurrentAdvisorAsync();
+            if (advisor == null) return Unauthorized();
+
+            var meeting = await _context.Meetings
+                .FirstOrDefaultAsync(m =>
+                    m.MeetingId == id &&
+                    m.AdvisorId == advisor.AdvisorId &&
+                    m.Status == "UPCOMING");
+
+            if (meeting == null)
+                return NotFound("Upcoming meeting not found.");
+
+            meeting.Status = "CANCELLED";
+            meeting.CancellationReason = dto.Reason?.Trim();
+            meeting.CancelledBy = "ADVISOR";
+            meeting.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Meeting cancelled." });
         }
 
         [HttpGet("upcoming")]

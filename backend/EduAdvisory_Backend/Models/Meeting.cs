@@ -63,6 +63,14 @@ public partial class Meeting
     [StringLength(255)]
     public string? GoogleSpaceName { get; set; }
 
+    [Column("cancellation_reason")]
+    public string? CancellationReason { get; set; }
+
+    /// <summary>Who cancelled: "ADVISOR" or "STUDENT"</summary>
+    [Column("cancelled_by")]
+    [StringLength(10)]
+    public string? CancelledBy { get; set; }
+
     [ForeignKey("AdvisorId")]
     [InverseProperty("Meetings")]
     public virtual Advisor? Advisor { get; set; }

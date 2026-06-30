@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { layoutApi } from "../../../services/layoutApi";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { startChatConnection } from "../signalr/chatConnection";
@@ -8,7 +8,13 @@ const MessagesContext = createContext();
 export function MessagesProvider({ children }) {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isOnMessagesPage, setIsOnMessagesPage] = useState(false);
+  const isOnMessagesPageRef = useRef(false);
   const { keycloak } = useAuth();
+
+  // Keep ref in sync so SignalR handler always reads the current value
+  useEffect(() => {
+    isOnMessagesPageRef.current = isOnMessagesPage;
+  }, [isOnMessagesPage]);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -24,11 +30,10 @@ export function MessagesProvider({ children }) {
   }, []);
 
   const incrementUnreadCount = useCallback(() => {
-    // Only increment if NOT on the messages page
-    if (!isOnMessagesPage) {
+    if (!isOnMessagesPageRef.current) {
       setUnreadMessagesCount((prev) => prev + 1);
     }
-  }, [isOnMessagesPage]);
+  }, []);
 
   // Initial fetch on mount
   useEffect(() => {
@@ -37,7 +42,7 @@ export function MessagesProvider({ children }) {
     }
   }, [keycloak?.token, fetchUnreadCount]);
 
-  // Set up SignalR connection to listen for messages in the background
+  // Set up SignalR — only ReceiveMessage increments the badge (not MessageSent)
   useEffect(() => {
     if (!keycloak?.token) return;
 
@@ -46,24 +51,15 @@ export function MessagesProvider({ children }) {
     const setupSignalR = async () => {
       try {
         const connection = await startChatConnection(keycloak.token);
-
         if (!mounted) return;
 
-        // Listen for new messages even when not on messages page
-        const handleReceiveMessage = (message) => {
-          if (mounted) {
-            incrementUnreadCount();
-          }
+        const handleReceiveMessage = () => {
+          if (mounted) incrementUnreadCount();
         };
 
-        const handleMessageSent = (message) => {
-          if (mounted) {
-            incrementUnreadCount();
-          }
-        };
-
+        // Remove any previous provider listener before adding to avoid stacking
+        connection.off("ReceiveMessage", handleReceiveMessage);
         connection.on("ReceiveMessage", handleReceiveMessage);
-        connection.on("MessageSent", handleMessageSent);
       } catch (error) {
         console.error("Failed to setup SignalR:", error);
       }

@@ -307,7 +307,7 @@ public class AdminUserManagementService : IAdminUserManagementService
 
     private static string NormalizeUsername(string username)
     {
-        var normalized = username.Trim();
+        var normalized = username.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(normalized))
             throw new InvalidOperationException("Username is required.");
 

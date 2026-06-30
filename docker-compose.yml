@@ -1,0 +1,101 @@
+services:
+
+  # ─── PostgreSQL ────────────────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: eduadvisory_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eduadvisory_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Keycloak ──────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: eduadvisory_keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── ASP.NET Core backend ──────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend/EduAdvisory_Backend
+      dockerfile: Dockerfile
+    container_name: eduadvisory_backend
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=eduadvisory_db;Username=postgres;Password=postgres;Trust Server Certificate=true"
+      Keycloak__Realm: EduAdvisory
+      Keycloak__AdminApiBaseUrl: http://keycloak:8080
+      Keycloak__Authority: http://keycloak:8080/realms/EduAdvisory
+      Keycloak__Audience: eduadvisory-backend
+      # Fill in your secrets via .env file or Docker secrets
+      Keycloak__AdminClientId: ${KEYCLOAK_ADMIN_CLIENT_ID:-}
+      Keycloak__AdminClientSecret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-}
+      OpenAI__ApiKey: ${OPENAI_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OpenAI__ChatModel: gpt-4o-mini
+      OpenAI__EmbeddingModel: text-embedding-3-small
+      OpenAI__EmbeddingDimensions: "1536"
+      GoogleOAuth__ClientId: ${GOOGLE_CLIENT_ID:-}
+      GoogleOAuth__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      GoogleOAuth__RedirectUri: http://localhost:5267/api/shared-google-auth/callback
+    ports:
+      - "5267:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    volumes:
+      - backend_uploads:/app/wwwroot/uploads
+
+  # ─── React frontend ────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend/eduadvisory-frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_KEYCLOAK_URL: http://localhost:8080
+        REACT_APP_KEYCLOAK_REALM: EduAdvisory
+        REACT_APP_KEYCLOAK_CLIENT: eduadvisory-frontend
+        REACT_APP_API_URL: http://localhost:5267
+    container_name: eduadvisory_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_uploads:
