@@ -410,6 +410,14 @@ namespace EduAdvisory_Backend.Controllers
             meeting.CancelledBy = "ADVISOR";
             meeting.UpdatedAt = DateTimeOffset.UtcNow;
 
+            if (meeting.RequestId.HasValue)
+            {
+                var request = await _context.Set<MeetingRequest>()
+                    .FirstOrDefaultAsync(r => r.RequestId == meeting.RequestId.Value);
+                if (request != null)
+                    request.Status = "CANCELLED";
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Meeting cancelled." });

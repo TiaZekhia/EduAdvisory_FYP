@@ -8,6 +8,7 @@ import { Calendar } from "primereact/calendar";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Message } from "primereact/message";
 import { Skeleton } from "primereact/skeleton";
+import { Paginator } from "primereact/paginator";
 
 import { advisorMeetingsApi } from "../../../services/advisors/advisorMeetingsApi";
 import { PageHero } from "../../../shared/components/PageHero";
@@ -61,6 +62,9 @@ export default function AdvisorMeetingsPage() {
   const [cancelling, setCancelling] = useState(false);
   const [cancelErr, setCancelErr] = useState("");
 
+  const [historyFirst, setHistoryFirst] = useState(0);
+  const PAGE_SIZE = 5;
+
   const rulesCount = useMemo(() => weeklyAvailability.length, [weeklyAvailability]);
 
   const loadData = async () => {
@@ -80,6 +84,7 @@ export default function AdvisorMeetingsPage() {
       setPendingRequests(pendingRes.data || []);
       setUpcomingMeetings((upcomingRes.data || []).filter(m => new Date(m.endAt ?? m.startAt) > new Date()));      setHistoryMeetings(historyRes.data || []);
       setGoogleStatus(googleRes.data || { connected: false, googleEmail: null });
+      setHistoryFirst(0);
     } catch (e) {
       console.error(e);
       setErr(e?.response?.data?.message ?? e?.response?.data ?? e?.message ?? "Failed to load advisor meetings.");
@@ -429,11 +434,22 @@ export default function AdvisorMeetingsPage() {
         </div>
 
         {historyMeetings.length ? (
-          <div className="d-flex flex-column gap-3">
-            {historyMeetings.map((meeting) => (
-              <MeetingCard key={meeting.meetingId} meeting={meeting} isPast />
-            ))}
-          </div>
+          <>
+            <div className="d-flex flex-column gap-3">
+              {historyMeetings.slice(historyFirst, historyFirst + PAGE_SIZE).map((meeting) => (
+                <MeetingCard key={meeting.meetingId} meeting={meeting} isPast />
+              ))}
+            </div>
+            {historyMeetings.length > PAGE_SIZE && (
+              <Paginator
+                first={historyFirst}
+                rows={PAGE_SIZE}
+                totalRecords={historyMeetings.length}
+                onPageChange={(e) => setHistoryFirst(e.first)}
+                className="mt-3 border-0 p-0"
+              />
+            )}
+          </>
         ) : (
           <EmptyState
             icon="pi pi-history"

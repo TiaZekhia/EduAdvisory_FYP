@@ -8,6 +8,7 @@ import { Calendar } from "primereact/calendar";
 import { Dropdown } from "primereact/dropdown";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Message } from "primereact/message";
+import { Paginator } from "primereact/paginator";
 
 import { useStudentSummary } from "../context/StudentSummaryProvider";
 import { studentMeetingsApi } from "../../../services/students/studentMeetingsApi";
@@ -50,6 +51,10 @@ export default function MeetingsPage() {
   const [cancelling, setCancelling] = useState(false);
   const [cancelErr, setCancelErr] = useState("");
 
+  const [requestsFirst, setRequestsFirst] = useState(0);
+  const [historyFirst, setHistoryFirst] = useState(0);
+  const PAGE_SIZE = 5;
+
   const pendingRequestsCount = useMemo(
     () => requests.filter((r) => r.status === "PENDING").length,
     [requests]
@@ -72,6 +77,8 @@ export default function MeetingsPage() {
       setAdvisor(advisorRes.data || null);
       setUpcoming((upcomingRes.data || []).filter(m => new Date(m.endAt ?? m.startAt) > new Date()));      setHistory(historyRes.data || []);
       setRequests(requestsRes.data || []);
+      setRequestsFirst(0);
+      setHistoryFirst(0);
     } catch (e) {
       console.error(e);
       setErr(e?.response?.data ?? e?.message ?? "Failed to load meetings page.");
@@ -324,11 +331,22 @@ export default function MeetingsPage() {
         </div>
 
         {requests?.length ? (
-          <div className="d-flex flex-column gap-3">
-            {requests.map((r) => (
-              <RequestRow key={r.requestId} request={r} onCancel={handleCancelRequest} />
-            ))}
-          </div>
+          <>
+            <div className="d-flex flex-column gap-3">
+              {requests.slice(requestsFirst, requestsFirst + PAGE_SIZE).map((r) => (
+                <RequestRow key={r.requestId} request={r} onCancel={handleCancelRequest} />
+              ))}
+            </div>
+            {requests.length > PAGE_SIZE && (
+              <Paginator
+                first={requestsFirst}
+                rows={PAGE_SIZE}
+                totalRecords={requests.length}
+                onPageChange={(e) => setRequestsFirst(e.first)}
+                className="mt-3 border-0 p-0"
+              />
+            )}
+          </>
         ) : (
           <EmptyState
             icon="pi pi-inbox"
@@ -370,11 +388,22 @@ export default function MeetingsPage() {
         </div>
 
         {history?.length ? (
-          <div className="d-flex flex-column gap-3">
-            {history.map((m) => (
-              <MeetingHistoryRow key={m.meetingId} meeting={m} />
-            ))}
-          </div>
+          <>
+            <div className="d-flex flex-column gap-3">
+              {history.slice(historyFirst, historyFirst + PAGE_SIZE).map((m) => (
+                <MeetingHistoryRow key={m.meetingId} meeting={m} />
+              ))}
+            </div>
+            {history.length > PAGE_SIZE && (
+              <Paginator
+                first={historyFirst}
+                rows={PAGE_SIZE}
+                totalRecords={history.length}
+                onPageChange={(e) => setHistoryFirst(e.first)}
+                className="mt-3 border-0 p-0"
+              />
+            )}
+          </>
         ) : (
           <EmptyState
             icon="pi pi-history"
@@ -645,16 +674,19 @@ function RequestRow({ request, onCancel }) {
     request.status === "PENDING" ? "warning"
     : request.status === "REJECTED" ? "danger"
     : request.status === "ACCEPTED" ? "success"
+    : request.status === "CANCELLED" ? "danger"
     : "info";
 
   const accent =
     request.status === "PENDING" ? "#f59e0b"
     : request.status === "REJECTED" ? "#dc2626"
     : request.status === "ACCEPTED" ? "#16a34a"
+    : request.status === "CANCELLED" ? "#b91c1c"
     : "#6b7280";
 
   const statusIcon =
     request.status === "PENDING" ? "pi pi-clock"
+    : request.status === "CANCELLED" ? "pi pi-times-circle"
     : request.status === "REJECTED" ? "pi pi-times-circle"
     : "pi pi-check-circle";
 
@@ -715,19 +747,25 @@ function RequestRow({ request, onCancel }) {
 }
 
 /* ─── Timeline Slot Picker ────────────────────────────────────── */
+const SLOT_PAGE_SIZE = 6;
+
 function TimelineSlotPicker({ slots, onSelect }) {
+  const [slotFirst, setSlotFirst] = useState(0);
+
+  const pageSlots = slots.slice(slotFirst, slotFirst + SLOT_PAGE_SIZE);
+
   const groups = [
     {
       key: "morning",
       label: "Morning",
       icon: "pi pi-sun",
-      items: slots.filter((s) => new Date(s.startAt).getHours() < 12),
+      items: pageSlots.filter((s) => new Date(s.startAt).getHours() < 12),
     },
     {
       key: "afternoon",
       label: "Afternoon",
       icon: "pi pi-cloud-sun",
-      items: slots.filter((s) => {
+      items: pageSlots.filter((s) => {
         const h = new Date(s.startAt).getHours();
         return h >= 12 && h < 17;
       }),
@@ -736,7 +774,7 @@ function TimelineSlotPicker({ slots, onSelect }) {
       key: "evening",
       label: "Evening",
       icon: "pi pi-moon",
-      items: slots.filter((s) => new Date(s.startAt).getHours() >= 17),
+      items: pageSlots.filter((s) => new Date(s.startAt).getHours() >= 17),
     },
   ].filter((g) => g.items.length > 0);
 
@@ -778,6 +816,15 @@ function TimelineSlotPicker({ slots, onSelect }) {
           })}
         </div>
       ))}
+      {slots.length > SLOT_PAGE_SIZE && (
+        <Paginator
+          first={slotFirst}
+          rows={SLOT_PAGE_SIZE}
+          totalRecords={slots.length}
+          onPageChange={(e) => setSlotFirst(e.first)}
+          className="mt-3 border-0 p-0"
+        />
+      )}
     </div>
   );
 }
