@@ -461,7 +461,7 @@ namespace EduAdvisory_Backend.Controllers
                 .Include(m => m.Student)
                 .Where(m =>
                     m.AdvisorId == advisor.AdvisorId &&
-                    (m.Status == "COMPLETED" || m.StartAt < now))
+                    (m.Status == "COMPLETED" || m.Status == "CANCELLED" || m.StartAt < now))
                 .OrderByDescending(m => m.StartAt)
                 .Select(m => new MeetingDto
                 {

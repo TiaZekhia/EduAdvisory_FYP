@@ -588,6 +588,7 @@ function UpcomingMeetingRow({ meeting, onCancel }) {
 function MeetingHistoryRow({ meeting }) {
   const accent = meetingAccentColor(meeting.title);
   const ini = nameInitials(meeting.advisorName);
+  const isCancelled = meeting.status === "CANCELLED";
 
   return (
     <div className="mcard mcard--past" style={{ "--accent": accent }}>
@@ -601,9 +602,15 @@ function MeetingHistoryRow({ meeting }) {
         <div className="mcard-content">
           <div className="d-flex align-items-start justify-content-between gap-2 flex-wrap">
             <div className="mcard-title">{meeting.title}</div>
-            <span className="mcard-completed-chip">
-              <i className="pi pi-check-circle" /> Completed
-            </span>
+            {isCancelled ? (
+              <span className="mcard-completed-chip" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                <i className="pi pi-times-circle" /> Cancelled
+              </span>
+            ) : (
+              <span className="mcard-completed-chip">
+                <i className="pi pi-check-circle" /> Completed
+              </span>
+            )}
           </div>
           <div className="mcard-meta">
             <span className="mcard-person">
@@ -615,15 +622,17 @@ function MeetingHistoryRow({ meeting }) {
               {formatDateShort(meeting.startAt)}
             </span>
           </div>
-          {meeting.notes?.length ? (
-            <div className="mcard-notes">
-              <div className="mcard-notes-label">
-                <i className="pi pi-file-edit" /> Advisor Notes
+          {!isCancelled && (
+            meeting.notes?.length ? (
+              <div className="mcard-notes">
+                <div className="mcard-notes-label">
+                  <i className="pi pi-file-edit" /> Advisor Notes
+                </div>
+                <div className="mcard-notes-text">{meeting.notes}</div>
               </div>
-              <div className="mcard-notes-text">{meeting.notes}</div>
-            </div>
-          ) : (
-            <div className="mcard-no-notes">No advisor notes recorded.</div>
+            ) : (
+              <div className="mcard-no-notes">No advisor notes recorded.</div>
+            )
           )}
         </div>
       </div>

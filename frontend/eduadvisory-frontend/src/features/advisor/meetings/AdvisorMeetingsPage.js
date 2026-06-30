@@ -1128,7 +1128,11 @@ function MeetingCard({ meeting, isPast = false, onCancel }) {
         <div className="mcard-content">
           <div className="d-flex align-items-start justify-content-between gap-2 flex-wrap">
             <div className="mcard-title">{meeting.title}</div>
-            {isPast ? (
+            {meeting.status === "CANCELLED" ? (
+              <span className="mcard-completed-chip" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                <i className="pi pi-times-circle" /> Cancelled
+              </span>
+            ) : isPast ? (
               <span className="mcard-completed-chip">
                 <i className="pi pi-check-circle" /> Completed
               </span>
