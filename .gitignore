@@ -21,3 +21,5 @@ Thumbs.db
 Recording 2026-06-30 220615.mp4
 *.mp4
 *.mp4
+.env
+postgres-init/02-eduadvisory-backup.sql
