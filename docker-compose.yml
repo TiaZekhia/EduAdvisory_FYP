@@ -53,6 +53,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      TZ: Asia/Beirut
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=eduadvisory_db;Username=postgres;Password=postgres;Trust Server Certificate=true"
       Keycloak__Realm: EduAdvisory
       Keycloak__AdminApiBaseUrl: http://keycloak:8080

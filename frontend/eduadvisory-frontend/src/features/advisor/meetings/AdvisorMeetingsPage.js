@@ -1183,6 +1183,7 @@ function MeetingCard({ meeting, isPast = false, onCancel }) {
                 icon="pi pi-times"
                 className="p-button-sm p-button-outlined p-button-danger"
                 onClick={onCancel}
+                style={{ borderRadius: "20px", fontSize: "0.75rem", padding: "0.3rem 0.85rem" }}
               />
             )}
           </div>

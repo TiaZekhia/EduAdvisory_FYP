@@ -20,25 +20,32 @@ public class StudentProgressPlugin
     }
 
     [KernelFunction]
-    [Description("Gets the current student's grades or assessment results for a specific course. Use this when the student asks about grades, marks, assessment performance, or course progress.")]
+    [Description("Gets the current student's grades or assessment results for a specific course. Use this when the student asks about grades, marks, assessment performance, or course progress. If the student mentions a course by name (not code), first call GetMyCurrentCoursesAsync to find the exact course code, then call this function with that code.")]
     public async Task<string> GetMyCourseProgressAsync(
-        [Description("The course code, for example CS201.")]
+        [Description("The exact course code (e.g. PJMG101-EC00). If unknown, call GetMyCurrentCoursesAsync first to resolve it.")]
         string courseCode)
     {
         var studentId = RequireStudentId();
 
-        var isEnrolled = await _dbContext.SisCurrentEnrollments
+        // Try exact code match first, then fall back to name-based search
+        var enrollment = await _dbContext.SisCurrentEnrollments
             .AsNoTracking()
-            .AnyAsync(e => e.StudentId == studentId && e.CourseCode == courseCode);
+            .Where(e => e.StudentId == studentId &&
+                        (e.CourseCode == courseCode ||
+                         e.CourseCodeNavigation.CourseName.ToLower().Contains(courseCode.ToLower())))
+            .Select(e => new { e.CourseCode, CourseName = e.CourseCodeNavigation.CourseName })
+            .FirstOrDefaultAsync();
 
-        if (!isEnrolled)
+        if (enrollment == null)
         {
-            return $"The student is not enrolled in {courseCode}.";
+            return $"The student is not enrolled in any course matching \"{courseCode}\". Use GetMyCurrentCoursesAsync to see enrolled courses.";
         }
+
+        var resolvedCode = enrollment.CourseCode;
 
         var grades = await _dbContext.SisStudentGrades
             .AsNoTracking()
-            .Where(g => g.StudentId == studentId && g.CourseCode == courseCode)
+            .Where(g => g.StudentId == studentId && g.CourseCode == resolvedCode)
             .Select(g => new
             {
                 g.GradeId,
@@ -48,10 +55,10 @@ public class StudentProgressPlugin
 
         if (!grades.Any())
         {
-            return $"No grade records were found for {courseCode}.";
+            return $"No grade records were found for {enrollment.CourseName} ({resolvedCode}).";
         }
 
-        return $"Grade/progress records for {courseCode}:\n" +
+        return $"Grade/progress records for {enrollment.CourseName} ({resolvedCode}):\n" +
                string.Join("\n", grades.Select(g =>
                    $"- Grade: {g.Grade}"));
     }

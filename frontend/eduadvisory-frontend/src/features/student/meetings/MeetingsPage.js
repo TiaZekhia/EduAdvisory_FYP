@@ -605,6 +605,7 @@ function UpcomingMeetingRow({ meeting, onCancel }) {
                 icon="pi pi-times"
                 className="p-button-sm p-button-outlined p-button-danger"
                 onClick={onCancel}
+                style={{ borderRadius: "20px", fontSize: "0.75rem", padding: "0.3rem 0.85rem" }}
               />
             )}
           </div>
@@ -717,7 +718,7 @@ function RequestRow({ request, onCancel }) {
           {request.reason && (
             <div className="mcard-notes">
               <div className="mcard-notes-label">
-                <i className="pi pi-comment" /> Your Reason
+                <i className="pi pi-comment" /> Reason
               </div>
               <div className="mcard-notes-text">{request.reason}</div>
             </div>
@@ -737,6 +738,7 @@ function RequestRow({ request, onCancel }) {
                 icon="pi pi-times"
                 className="p-button-sm p-button-outlined p-button-danger"
                 onClick={() => onCancel(request.requestId)}
+                style={{ borderRadius: "20px", fontSize: "0.75rem", padding: "0.3rem 0.85rem" }}
               />
             </div>
           )}

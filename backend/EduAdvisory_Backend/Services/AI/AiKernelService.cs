@@ -50,6 +50,26 @@ public class AiKernelService : IAiKernelService
             "StudentMeeting");
 
         kernel.Plugins.AddFromObject(
+            ActivatorUtilities.CreateInstance<StudentAttendancePlugin>(_serviceProvider),
+            "StudentAttendance");
+
+        kernel.Plugins.AddFromObject(
+            ActivatorUtilities.CreateInstance<StudentCourseHistoryPlugin>(_serviceProvider),
+            "StudentCourseHistory");
+
+        kernel.Plugins.AddFromObject(
+            ActivatorUtilities.CreateInstance<StudentRiskPlugin>(_serviceProvider),
+            "StudentRisk");
+
+        kernel.Plugins.AddFromObject(
+            ActivatorUtilities.CreateInstance<AdvisorAnnouncementPlugin>(_serviceProvider),
+            "AdvisorAnnouncements");
+
+        kernel.Plugins.AddFromObject(
+            ActivatorUtilities.CreateInstance<StudentStudyPlanPlugin>(_serviceProvider),
+            "StudentStudyPlan");
+
+        kernel.Plugins.AddFromObject(
             ActivatorUtilities.CreateInstance<AcademicSupportPlugin>(_serviceProvider),
             "AcademicSupport");
 

@@ -46,9 +46,20 @@ public class StudentMeetingPlugin
             return "No upcoming advisor meetings were found.";
         }
 
+        var tz = GetBeirutTimeZone();
         return "Upcoming advisor meetings:\n" +
                string.Join("\n", meetings.Select(m =>
-                   $"- {m.StartAt:yyyy-MM-dd HH:mm} to {m.EndAt:HH:mm}, Type: {m.MeetingType}, Status: {m.Status}"));
+               {
+                   var start = TimeZoneInfo.ConvertTime(m.StartAt, tz);
+                   var end = TimeZoneInfo.ConvertTime(m.EndAt, tz);
+                   return $"- {start:yyyy-MM-dd HH:mm} to {end:HH:mm}, Type: {m.MeetingType}, Status: {m.Status}";
+               }));
+    }
+
+    private static TimeZoneInfo GetBeirutTimeZone()
+    {
+        try { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Beirut"); }
+        catch { return TimeZoneInfo.FindSystemTimeZoneById("Middle East Standard Time"); }
     }
 
     private int RequireStudentId()
